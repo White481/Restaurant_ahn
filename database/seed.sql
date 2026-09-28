@@ -1,0 +1,1 @@
+-- TODO: sample data (menu items, ingredients, tables, employees)
