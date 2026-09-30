@@ -1,0 +1,1 @@
+-- TODO: triggers (e.g. deduct ingredient stock when an order is placed)
