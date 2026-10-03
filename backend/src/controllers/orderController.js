@@ -18,3 +18,27 @@ exports.createNewOrder = async (req, res) => {
         res.status(500).json({ message: 'Failed to create order', error: error.message });
     }
 };
+
+// ดึงรายการออเดอร์
+exports.getOrders = async (req, res) => {
+  const orders = await orderModel.getAllOrders();
+  res.json(orders);
+};
+
+// เปลี่ยนสถานะออเดอร์
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // <--- ต้องดึง status ออกมาจาก req.body
+
+    // ป้องกันกรณีไม่ได้ส่ง status มา ให้ส่ง error สวยๆ กลับไปแทนที่จะให้ crash 500
+    if (!status) {
+      return res.status(400).json({ message: 'กรุณาระบุ status' });
+    }
+
+    await orderModel.updateStatus(id, status);
+    res.json({ message: 'Updated successfully' });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+};

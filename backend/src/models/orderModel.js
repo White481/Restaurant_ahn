@@ -44,3 +44,14 @@ exports.createOrder = async (orderData, items) => {
         connection.release();
     }
 };
+
+// 1. ดึงรายการออเดอร์ทั้งหมด
+exports.getAllOrders = async () => {
+  const [rows] = await db.execute('SELECT * FROM orders ORDER BY order_id DESC');
+  return rows;
+};
+
+// 2. อัปเดตสถานะออเดอร์
+exports.updateStatus = async (id, status) => {
+  await db.execute('UPDATE orders SET status = ? WHERE order_id = ?', [status, id]);
+};
