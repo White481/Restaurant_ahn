@@ -5,8 +5,7 @@ exports.login = async (req, res) => {
         // เช็คก่อนว่ามี req.body ส่งมาไหม เพื่อป้องกัน Error: Cannot destructure property
         if (!req.body || !req.body.username) {
             return res.status(400).json({ 
-                message: 'Bad Request: Missing username or password',
-                hint: 'Please check if you sent data as JSON and added app.use(express.json()) in server.js'
+                message: 'Bad Request: Missing username or password'
             });
         }
 

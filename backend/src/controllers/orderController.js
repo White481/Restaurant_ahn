@@ -31,7 +31,7 @@ exports.updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body; // <--- ต้องดึง status ออกมาจาก req.body
 
-    // ป้องกันกรณีไม่ได้ส่ง status มา ให้ส่ง error สวยๆ กลับไปแทนที่จะให้ crash 500
+    // ป้องกันกรณีไม่ได้ส่ง status มา ให้ส่ง error กลับไปแทนที่จะให้ crash 500
     if (!status) {
       return res.status(400).json({ message: 'กรุณาระบุ status' });
     }
