@@ -1,39 +1,42 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const userModel = require('../models/userModel');
+const { HttpError, asyncHandler } = require('../middleware/errorHandler');
 
-exports.login = async (req, res) => {
-    try {
-        // เช็คก่อนว่ามี req.body ส่งมาไหม เพื่อป้องกัน Error: Cannot destructure property
-        if (!req.body || !req.body.username) {
-            return res.status(400).json({ 
-                message: 'Bad Request: Missing username or password'
-            });
-        }
+// hash หลอก ไว้เทียบเมื่อไม่พบ username เพื่อให้เวลาตอบใกล้เคียงกัน
+// (กันคนวัดเวลาตอบเพื่อเดาว่ามี username นี้อยู่ในระบบหรือไม่)
+const DUMMY_HASH = bcrypt.hashSync('dummy-password', 10);
 
-        const { username, password } = req.body;
-        
-        const user = await userModel.findUserByUsername(username);
-        
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid username or password' });
-        }
+exports.login = asyncHandler(async (req, res) => {
+    const { username, password } = req.body || {};
 
-        if (user.password_hash !== password) {
-            return res.status(401).json({ message: 'Invalid username or password' });
-        }
-
-        res.json({ 
-            message: 'Login successful',
-            user: { 
-                id: user.user_id, 
-                username: user.username, 
-                role: user.role, 
-                employee_name: `${user.first_name} ${user.last_name}` 
-            } 
-        });
-
-    } catch (error) {
-        // ให้พิมพ์ Error สีแดงลงในหน้าจอ Terminal จะได้รู้ว่า Database มีปัญหาอะไร
-        console.error("🔥 Error Details:", error); 
-        res.status(500).json({ message: 'Internal server error', details: error.message });
+    if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+        throw new HttpError(400, 'Bad Request: username and password are required');
     }
-};
+
+    const user = await userModel.findUserByUsername(username);
+
+    // bcrypt.compare เทียบรหัสผ่านที่พิมพ์มากับ hash ใน DB (ไม่มีการถอด hash กลับเป็นรหัสจริง)
+    const passwordMatches = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+
+    if (!user || !passwordMatches) {
+        throw new HttpError(401, 'Invalid username or password');
+    }
+
+    const token = jwt.sign(
+        { id: user.user_id, employee_id: user.employee_id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    );
+
+    res.json({
+        message: 'Login successful',
+        token,
+        user: {
+            id: user.user_id,
+            username: user.username,
+            role: user.role,
+            employee_name: `${user.first_name} ${user.last_name}`
+        }
+    });
+});

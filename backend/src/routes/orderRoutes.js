@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 
-router.post('/', orderController.createNewOrder);
-router.get('/', orderController.getOrders);                // ดึงออเดอร์ทั้งหมด
-router.patch('/:id', orderController.updateOrderStatus);   // เปลี่ยนสถานะออเดอร์
+// ลูกค้าสั่งอาหารได้โดยไม่ต้อง login (ถ้าพนักงาน login แล้วจะบันทึก employee_id ให้)
+router.post('/', optionalAuth, orderController.createNewOrder);
+
+// ดูออเดอร์ทั้งหมด (Dashboard / ห้องครัว) และอัปเดตสถานะ: ต้อง login เป็นพนักงาน
+router.get('/', requireAuth(), orderController.getOrders);
+router.patch('/:id', requireAuth(), orderController.updateOrderStatus);
 
 module.exports = router;

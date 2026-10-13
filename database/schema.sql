@@ -1,7 +1,3 @@
--- Restaurant OMS schema (MySQL)
--- Entities: employee, sys_user, customer, dining_table, table_session, reservation,
---           orders, order_item, menu_item, menu_item_ingredient, ingredient
--- TODO: define tables (see docs/ ER diagram)
 -- =====================================================================
 -- Restaurant Order Management System - Physical Schema (MySQL 8+)
 -- Group 10
