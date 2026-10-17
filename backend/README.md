@@ -16,6 +16,7 @@
 | GET   | `/api/menus`       | public | ดึงเมนูทั้งหมด |
 | POST  | `/api/menus`       | admin  | เพิ่มเมนู |
 | POST  | `/api/orders`      | public | สั่งอาหาร (บันทึกลง orders + order_item) |
+| GET   | `/api/orders/:id/status` | public | ดูสถานะของออเดอร์เดียว (หน้าติดตามของลูกค้า) |
 | GET   | `/api/orders`      | login  | ดึงออเดอร์ + รายการอาหาร (`?status=placed` กรองได้) |
 | PATCH | `/api/orders/:id`  | login  | อัปเดตสถานะ (placed/preparing/ready/served/completed/cancelled) |
 

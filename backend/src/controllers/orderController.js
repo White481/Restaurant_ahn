@@ -84,3 +84,14 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
 
     res.json({ message: 'Updated successfully', order_id: id, status });
 });
+
+// GET /api/orders/:id/status  (public) ส่งกลับเฉพาะ order_id กับ status ไม่มีข้อมูลส่วนตัว
+exports.getOrderStatus = asyncHandler(async (req, res) => {
+    const id = toPositiveInt(req.params.id);
+    if (id === null) throw new HttpError(400, 'Invalid order id');
+
+    const order = await orderModel.getStatus(id);
+    if (!order) throw new HttpError(404, 'Order not found');
+
+    res.json(order);
+});

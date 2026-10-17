@@ -92,3 +92,9 @@ exports.updateStatus = async (id, status) => {
     await db.execute('UPDATE orders SET status = ? WHERE order_id = ?', [status, id]);
     return true;
 };
+
+// ดูสถานะของออเดอร์เดียว (ใช้กับหน้าติดตามสถานะของลูกค้า) คืน null ถ้าไม่พบ
+exports.getStatus = async (id) => {
+    const [rows] = await db.execute('SELECT order_id, status FROM orders WHERE order_id = ?', [id]);
+    return rows[0] || null;
+};
