@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { formatBaht } from '../components/status.js';
+import Button, { buttonClasses } from '../ui/Button.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import { inputClass, labelClass } from '../ui/fields.js';
 import { useCart } from './CartContext.jsx';
 
+// หน้ายืนยันการสั่งอาหาร (checkout)
 export default function CartPage() {
   const navigate = useNavigate();
   const { items, tableId, setTableId, setQuantity, clear, totalPrice } = useCart();
@@ -16,14 +20,15 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="page customer">
-        <header className="topbar">
-          <h1>ตะกร้า</h1>
-        </header>
-        <p className="muted">ยังไม่มีรายการในตะกร้า</p>
-        <Link className="btn btn-primary" to="/">
-          กลับไปเลือกเมนู
-        </Link>
+      <div className="min-h-screen bg-stone-50 text-stone-900">
+        <div className="mx-auto max-w-xl px-4 py-10">
+          <h1 className="mb-4 text-2xl font-bold">ตะกร้า</h1>
+          <EmptyState icon="🛒" title="ยังไม่มีรายการในตะกร้า">
+            <Link className={buttonClasses('primary', 'md')} to="/">
+              กลับไปเลือกเมนู
+            </Link>
+          </EmptyState>
+        </div>
       </div>
     );
   }
@@ -58,83 +63,110 @@ export default function CartPage() {
     }
   }
 
+  const radioClass = (selected) =>
+    `flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 font-semibold ${
+      selected ? 'border-brand-600 bg-brand-50 text-brand-800' : 'border-stone-300 bg-white text-stone-700'
+    }`;
+
   return (
-    <div className="page customer">
-      <header className="topbar">
-        <h1>ตะกร้า</h1>
-        <Link to="/">← เมนู</Link>
-      </header>
+    <div className="min-h-screen bg-stone-50 pb-10 text-stone-900">
+      <div className="mx-auto max-w-xl px-4 py-5">
+        <header className="mb-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">ตะกร้า</h1>
+          <Link to="/" className="text-sm font-semibold text-brand-700 underline">
+            ← กลับไปเมนู
+          </Link>
+        </header>
 
-      <ul className="menu-list">
-        {items.map((item) => (
-          <li key={item.menu_item_id} className="menu-item">
-            <div>
-              <div className="menu-name">{item.item_name}</div>
-              <div className="menu-price">
-                {formatBaht(item.price)} × {item.quantity} = {formatBaht(item.price * item.quantity)}
+        <ul className="mb-5 flex flex-col gap-2">
+          {items.map((item) => (
+            <li key={item.menu_item_id} className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-3">
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{item.item_name}</p>
+                <p className="text-sm text-stone-500">
+                  {formatBaht(item.price)} × {item.quantity} = {formatBaht(item.price * item.quantity)}
+                </p>
               </div>
+              <div className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 p-1">
+                <button
+                  type="button"
+                  aria-label={`ลด ${item.item_name}`}
+                  onClick={() => setQuantity(item.menu_item_id, item.quantity - 1)}
+                  className="grid size-9 place-items-center rounded-full bg-white text-xl leading-none text-brand-700"
+                >
+                  −
+                </button>
+                <span className="min-w-6 text-center font-bold text-brand-800">{item.quantity}</span>
+                <button
+                  type="button"
+                  aria-label={`เพิ่ม ${item.item_name}`}
+                  onClick={() => setQuantity(item.menu_item_id, item.quantity + 1)}
+                  className="grid size-9 place-items-center rounded-full bg-brand-600 text-xl leading-none text-white"
+                >
+                  +
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-4">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium text-stone-600">ประเภทออเดอร์</legend>
+            <div className="flex gap-2">
+              <label className={radioClass(orderType === 'dine_in')}>
+                <input type="radio" name="orderType" value="dine_in" checked={orderType === 'dine_in'} onChange={() => setOrderType('dine_in')} className="sr-only" />
+                🍽️ ทานที่ร้าน
+              </label>
+              <label className={radioClass(orderType === 'take_away')}>
+                <input type="radio" name="orderType" value="take_away" checked={orderType === 'take_away'} onChange={() => setOrderType('take_away')} className="sr-only" />
+                🥡 กลับบ้าน
+              </label>
             </div>
-            <div className="stepper">
-              <button aria-label={`ลด ${item.item_name}`} onClick={() => setQuantity(item.menu_item_id, item.quantity - 1)}>
-                −
-              </button>
-              <span>{item.quantity}</span>
-              <button aria-label={`เพิ่ม ${item.item_name}`} onClick={() => setQuantity(item.menu_item_id, item.quantity + 1)}>
-                +
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+          </fieldset>
 
-      <form onSubmit={handleSubmit} className="card form">
-        <fieldset>
-          <legend>ประเภทออเดอร์</legend>
-          <label className="radio">
-            <input type="radio" name="orderType" value="dine_in" checked={orderType === 'dine_in'} onChange={() => setOrderType('dine_in')} />
-            ทานที่ร้าน
+          {tableId ? (
+            <p className="text-stone-600">
+              สั่งสำหรับ <strong>โต๊ะ {tableId}</strong>
+            </p>
+          ) : (
+            <label className={labelClass}>
+              หมายเลขโต๊ะ
+              <input type="number" min="1" inputMode="numeric" value={tableInput} onChange={(e) => setTableInput(e.target.value)} placeholder="เช่น 1" className={inputClass} />
+            </label>
+          )}
+
+          <label className={labelClass}>
+            วิธีชำระเงิน
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputClass}>
+              <option value="">เลือกตอนจ่ายเงิน</option>
+              <option value="cash">เงินสด</option>
+              <option value="card">บัตร</option>
+              <option value="qr">QR</option>
+            </select>
           </label>
-          <label className="radio">
-            <input type="radio" name="orderType" value="take_away" checked={orderType === 'take_away'} onChange={() => setOrderType('take_away')} />
-            กลับบ้าน
+
+          <label className={labelClass}>
+            ข้อความถึงครัว (ไม่บังคับ)
+            <textarea rows="3" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น เผ็ดน้อย ไม่ใส่ผัก" className={inputClass} />
           </label>
-        </fieldset>
 
-        {tableId ? (
-          <p className="muted">โต๊ะ {tableId}</p>
-        ) : (
-          <label>
-            หมายเลขโต๊ะ
-            <input type="number" min="1" inputMode="numeric" value={tableInput} onChange={(e) => setTableInput(e.target.value)} placeholder="เช่น 1" />
-          </label>
-        )}
+          <div className="flex items-center justify-between border-t border-dashed border-stone-300 pt-3 text-lg">
+            <span>รวมทั้งหมด</span>
+            <strong className="text-brand-700">{formatBaht(totalPrice)}</strong>
+          </div>
 
-        <label>
-          วิธีชำระเงิน
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <option value="">เลือกตอนจ่ายเงิน</option>
-            <option value="cash">เงินสด</option>
-            <option value="card">บัตร</option>
-            <option value="qr">QR</option>
-          </select>
-        </label>
+          {error && (
+            <p role="alert" className="text-red-700">
+              {error}
+            </p>
+          )}
 
-        <label>
-          ข้อความถึงครัว (ไม่บังคับ)
-          <textarea rows="3" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น เผ็ดน้อย ไม่ใส่ผัก" />
-        </label>
-
-        <div className="total-row">
-          <span>รวมทั้งหมด</span>
-          <strong>{formatBaht(totalPrice)}</strong>
-        </div>
-
-        {error && <p className="error">{error}</p>}
-
-        <button className="btn btn-primary btn-block" type="submit" disabled={submitting}>
-          {submitting ? 'กำลังส่งออเดอร์...' : 'ยืนยันสั่งอาหาร'}
-        </button>
-      </form>
+          <Button type="submit" size="lg" disabled={submitting} className="w-full">
+            {submitting ? 'กำลังส่งออเดอร์...' : 'ยืนยันสั่งอาหาร'}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

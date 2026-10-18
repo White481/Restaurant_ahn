@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../services/api.js';
-import { STATUS_FLOW, STATUS_LABEL } from '../components/status.js';
+import { buttonClasses } from '../ui/Button.jsx';
+import { usePolling } from '../hooks/usePolling.js';
+import OrderStepper from './components/OrderStepper.jsx';
 
 const FINAL = ['completed', 'cancelled'];
 
@@ -9,66 +11,51 @@ export default function OrderStatusPage() {
   const { id } = useParams();
   const [status, setStatus] = useState(null);
   const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
 
-  // polling: ถามสถานะซ้ำทุก 4 วินาทีจนกว่าออเดอร์จะจบ
-  // (วิธีที่ง่ายที่สุดสำหรับ "live tracking"; ระบบจริงที่ต้องการทันใจกว่านี้จะใช้ WebSocket)
-  useEffect(() => {
-    let active = true;
-    let timer;
-
-    async function load() {
-      try {
-        const data = await api.getOrderStatus(id);
-        if (!active) return;
-        setStatus(data.status);
-        setError('');
-        if (!FINAL.includes(data.status)) timer = setTimeout(load, 4000);
-      } catch (e) {
-        if (!active) return;
-        setError(e.message);
-        if (e.status !== 404) timer = setTimeout(load, 8000); // เน็ตหลุดชั่วคราว: ลองใหม่เรื่อยๆ
-      }
+  const load = useCallback(async () => {
+    try {
+      const data = await api.getOrderStatus(id);
+      setStatus(data.status);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+      if (e.status === 404) setNotFound(true);
     }
-
-    load();
-    return () => {
-      active = false; // ล้าง timer ตอนออกจากหน้า ไม่ให้ยิง request ค้าง
-      clearTimeout(timer);
-    };
   }, [id]);
 
-  const currentIndex = STATUS_FLOW.indexOf(status);
+  // ถามสถานะซ้ำทุก 4 วินาทีจนกว่าออเดอร์จะจบ (หรือไม่พบออเดอร์)
+  // วิธีที่ง่ายที่สุดสำหรับ "live tracking"; ระบบที่ต้องการทันใจกว่านี้จะใช้ WebSocket/SSE
+  usePolling(load, 4000, !notFound && !FINAL.includes(status));
 
   return (
-    <div className="page customer">
-      <header className="topbar">
-        <h1>ออเดอร์ #{id}</h1>
-      </header>
+    <div className="min-h-screen bg-stone-50 text-stone-900">
+      <div className="mx-auto max-w-md px-4 py-8">
+        <h1 className="text-2xl font-bold">ออเดอร์ #{id}</h1>
 
-      {error && <p className="error">{error}</p>}
-      {!status && !error && <p className="muted">กำลังโหลดสถานะ...</p>}
+        {error && (
+          <p role="alert" className="mt-4 text-red-700">
+            {error}
+          </p>
+        )}
+        {!status && !error && <p className="mt-4 text-stone-500">กำลังโหลดสถานะ...</p>}
 
-      {status === 'cancelled' && <p className="banner banner-cancel">ออเดอร์นี้ถูกยกเลิก กรุณาติดต่อพนักงาน</p>}
+        {status === 'cancelled' && (
+          <p className="mt-6 rounded-2xl bg-red-100 px-4 py-3 font-semibold text-red-800">ออเดอร์นี้ถูกยกเลิก กรุณาติดต่อพนักงาน</p>
+        )}
 
-      {status && status !== 'cancelled' && (
-        <ol className="steps">
-          {STATUS_FLOW.map((step, index) => {
-            const state = index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'todo';
-            return (
-              <li key={step} className={`step step-${state}`} aria-current={state === 'current' ? 'step' : undefined}>
-                <span className="dot">{state === 'done' ? '✓' : index + 1}</span>
-                <span>{STATUS_LABEL[step]}</span>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+        {status && status !== 'cancelled' && <OrderStepper status={status} />}
 
-      {status === 'completed' && <p className="banner banner-ok">ขอบคุณที่ใช้บริการ</p>}
+        {status && !FINAL.includes(status) && <p className="mb-4 text-sm text-stone-500">หน้านี้อัปเดตสถานะให้อัตโนมัติ</p>}
 
-      <Link className="btn btn-primary" to="/">
-        สั่งเพิ่ม
-      </Link>
+        {status === 'completed' && (
+          <p className="mb-4 rounded-2xl bg-green-100 px-4 py-3 font-semibold text-green-800">ขอบคุณที่ใช้บริการ 🙏</p>
+        )}
+
+        <Link className={`${buttonClasses('primary', 'lg')} mt-2 w-full`} to="/">
+          สั่งเพิ่ม
+        </Link>
+      </div>
     </div>
   );
 }
