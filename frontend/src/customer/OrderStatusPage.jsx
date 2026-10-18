@@ -4,6 +4,7 @@ import { api } from '../services/api.js';
 import { buttonClasses } from '../ui/Button.jsx';
 import { usePolling } from '../hooks/usePolling.js';
 import OrderStepper from './components/OrderStepper.jsx';
+import TopBar from './components/TopBar.jsx';
 
 const FINAL = ['completed', 'cancelled'];
 
@@ -30,6 +31,11 @@ export default function OrderStatusPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
+      <header className="border-b border-stone-200 bg-white">
+        <div className="mx-auto max-w-md">
+          <TopBar />
+        </div>
+      </header>
       <div className="mx-auto max-w-md px-4 py-8">
         <h1 className="text-2xl font-bold">ออเดอร์ #{id}</h1>
 

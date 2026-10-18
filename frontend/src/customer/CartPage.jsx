@@ -6,6 +6,7 @@ import Button, { buttonClasses } from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import { inputClass, labelClass } from '../ui/fields.js';
 import { useCart } from './CartContext.jsx';
+import TopBar from './components/TopBar.jsx';
 
 // หน้ายืนยันการสั่งอาหาร (checkout)
 export default function CartPage() {
@@ -21,6 +22,11 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-stone-50 text-stone-900">
+        <header className="border-b border-stone-200 bg-white">
+          <div className="mx-auto max-w-xl">
+            <TopBar tableId={tableId} />
+          </div>
+        </header>
         <div className="mx-auto max-w-xl px-4 py-10">
           <h1 className="mb-4 text-2xl font-bold">ตะกร้า</h1>
           <EmptyState icon="🛒" title="ยังไม่มีรายการในตะกร้า">
@@ -70,6 +76,11 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 pb-10 text-stone-900">
+      <header className="border-b border-stone-200 bg-white">
+        <div className="mx-auto max-w-xl">
+          <TopBar tableId={tableId} />
+        </div>
+      </header>
       <div className="mx-auto max-w-xl px-4 py-5">
         <header className="mb-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">ตะกร้า</h1>

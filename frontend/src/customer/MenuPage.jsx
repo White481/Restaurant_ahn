@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { formatBaht } from '../components/status.js';
 import Button from '../ui/Button.jsx';
@@ -11,6 +11,7 @@ import TopBar from './components/TopBar.jsx';
 import CategoryTabs from './components/CategoryTabs.jsx';
 import MenuGrid from './components/MenuGrid.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
+import CartButton from './components/CartButton.jsx';
 
 const NO_CATEGORY = 'อื่นๆ';
 
@@ -66,16 +67,17 @@ export default function MenuPage() {
     <div className="min-h-screen bg-stone-50 pb-28 text-stone-900">
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto max-w-5xl">
-          <TopBar tableId={tableId} cartCount={totalQty} onCartClick={() => setCartOpen(true)} />
-          <div className="px-4 pb-3">
+          <TopBar tableId={tableId} />
+          <div className="flex items-center gap-2 px-4 pb-3">
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="🔍 ค้นหาเมนู"
               aria-label="ค้นหาเมนู"
-              className={`${inputClass} w-full`}
+              className={`${inputClass} min-w-0 flex-1`}
             />
+            <CartButton count={totalQty} onClick={() => setCartOpen(true)} />
           </div>
           {categories.length > 0 && <CategoryTabs categories={categories} active={category} onChange={setCategory} />}
         </div>
@@ -104,11 +106,6 @@ export default function MenuPage() {
 
         {!loading && !error && groups.length > 0 && <MenuGrid groups={groups} qtyOf={qtyOf} onAdd={addItem} onChange={setQuantity} />}
 
-        <p className="mt-10 text-center text-sm">
-          <Link to="/staff/login" className="text-stone-500 underline">
-            สำหรับพนักงาน
-          </Link>
-        </p>
       </main>
 
       {totalQty > 0 && !cartOpen && (

@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import Button from '../../ui/Button.jsx';
+import ModeSwitch from '../../components/ModeSwitch.jsx';
 import { useNow } from '../../hooks/useNow.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../AuthContext.jsx';
@@ -45,9 +46,6 @@ export default function StaffLayout({ title, headerRight, children }) {
             </NavLink>
           ))}
         </nav>
-        <Link to="/" className="mt-auto rounded-xl px-3 py-2 text-sm text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800">
-          ↗ หน้าลูกค้า
-        </Link>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -67,6 +65,7 @@ export default function StaffLayout({ title, headerRight, children }) {
             <Button variant="secondary" size="sm" onClick={handleLogout}>
               ออกจากระบบ
             </Button>
+            <ModeSwitch />
           </div>
         </header>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import ModeSwitch from '../components/ModeSwitch.jsx';
 import Button from '../ui/Button.jsx';
 import { inputClass, labelClass } from '../ui/fields.js';
 import { useAuth } from './AuthContext.jsx';
@@ -28,34 +29,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-stone-50 px-4 text-stone-900">
-      <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-md">
-        <div className="text-center">
-          <p className="text-4xl" aria-hidden="true">
-            🍜
-          </p>
-          <h1 className="mt-1 text-xl font-bold">เข้าสู่ระบบพนักงาน</h1>
-        </div>
-        <label className={labelClass}>
-          ชื่อผู้ใช้
-          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus required className={inputClass} />
-        </label>
-        <label className={labelClass}>
-          รหัสผ่าน
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required className={inputClass} />
-        </label>
-        {error && (
-          <p role="alert" className="text-sm text-red-700">
-            {error}
-          </p>
-        )}
-        <Button type="submit" size="lg" disabled={submitting}>
-          {submitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
-        </Button>
-        <Link to="/" className="text-center text-sm text-stone-500 underline">
-          ← กลับหน้าลูกค้า
+    <div className="flex min-h-screen flex-col bg-stone-50 text-stone-900">
+      <header className="flex items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3">
+        <Link to="/" className="truncate text-lg font-bold text-brand-700">
+          🍜 Restaurant OMS
         </Link>
-      </form>
+        <ModeSwitch />
+      </header>
+
+      <main className="grid flex-1 place-items-center px-4 py-8">
+        <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-md">
+          <div className="text-center">
+            <p className="text-4xl" aria-hidden="true">
+              🍜
+            </p>
+            <h1 className="mt-1 text-xl font-bold">เข้าสู่ระบบพนักงาน</h1>
+          </div>
+          <label className={labelClass}>
+            ชื่อผู้ใช้
+            <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus required className={inputClass} />
+          </label>
+          <label className={labelClass}>
+            รหัสผ่าน
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required className={inputClass} />
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          <Button type="submit" size="lg" disabled={submitting}>
+            {submitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+          </Button>
+        </form>
+      </main>
     </div>
   );
 }
