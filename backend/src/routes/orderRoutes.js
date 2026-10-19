@@ -13,4 +13,7 @@ router.get('/:id/status', orderController.getOrderStatus);
 router.get('/', requireAuth(), orderController.getOrders);
 router.patch('/:id', requireAuth(), orderController.updateOrderStatus);
 
+// รับชำระเงิน + ปิดออเดอร์ (ไม่ให้ครัวรับเงิน)
+router.post('/:id/pay', requireAuth(['admin', 'cashier', 'waiter']), orderController.payOrder);
+
 module.exports = router;

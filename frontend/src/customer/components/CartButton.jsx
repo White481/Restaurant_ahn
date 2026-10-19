@@ -1,10 +1,13 @@
+import { useLang } from '../../i18n/LanguageContext.jsx';
+
 // ปุ่มตะกร้ากลมพร้อมตัวเลขจำนวนรายการ (กดเพื่อเปิด CartDrawer)
 export default function CartButton({ count, onClick }) {
+  const { t } = useLang();
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`เปิดตะกร้า (${count} รายการ)`}
+      aria-label={t('cart.open', { n: count })}
       className="relative grid size-11 shrink-0 place-items-center rounded-full border border-stone-200 bg-white text-xl hover:bg-stone-50"
     >
       <span aria-hidden="true">🛒</span>

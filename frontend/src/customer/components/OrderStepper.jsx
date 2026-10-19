@@ -1,7 +1,9 @@
-import { STATUS_FLOW, STATUS_LABEL } from '../../components/status.js';
+import { STATUS_FLOW } from '../../components/status.js';
+import { useLang } from '../../i18n/LanguageContext.jsx';
 
 // ขั้นตอนสถานะออเดอร์ (ที่ผ่านแล้ว = เขียว ✓, ตอนนี้ = ส้ม, ที่ยังไม่ถึง = เทา)
 export default function OrderStepper({ status }) {
+  const { t } = useLang();
   const currentIndex = STATUS_FLOW.indexOf(status);
   return (
     <ol className="my-6 flex flex-col gap-4">
@@ -17,7 +19,7 @@ export default function OrderStepper({ status }) {
         return (
           <li key={step} data-state={state} aria-current={state === 'current' ? 'step' : undefined} className="flex items-center gap-3">
             <span className={`grid size-9 shrink-0 place-items-center rounded-full border-2 font-bold ${dot}`}>{state === 'done' ? '✓' : index + 1}</span>
-            <span className={text}>{STATUS_LABEL[step]}</span>
+            <span className={text}>{t(`status.${step}`)}</span>
           </li>
         );
       })}

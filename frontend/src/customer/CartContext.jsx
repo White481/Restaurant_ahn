@@ -32,7 +32,13 @@ export function CartProvider({ children }) {
       }
       return [
         ...prev,
-        { menu_item_id: menu.menu_item_id, item_name: menu.item_name, price: Number(menu.price), quantity: 1 }
+        {
+          menu_item_id: menu.menu_item_id,
+          item_name: menu.item_name,
+          item_name_en: menu.item_name_en || null,
+          price: Number(menu.price),
+          quantity: 1
+        }
       ];
     });
   }, []);

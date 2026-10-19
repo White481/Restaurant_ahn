@@ -107,6 +107,7 @@ DROP TABLE IF EXISTS menu_item;
 CREATE TABLE menu_item (
   menu_item_id  INT AUTO_INCREMENT PRIMARY KEY,
   item_name     VARCHAR(100) NOT NULL,
+  item_name_en  VARCHAR(100) NULL,            -- ชื่อภาษาอังกฤษ (ไม่บังคับ) ใช้กับหน้าเว็บ/ใบเสร็จภาษาอังกฤษ
   category      VARCHAR(50),
   price         DECIMAL(10,2) NOT NULL
 ) ENGINE=InnoDB;
@@ -155,6 +156,9 @@ CREATE TABLE orders (
   total_price     DECIMAL(10,2) NOT NULL DEFAULT 0,
   special_request TEXT,
   payment_method  ENUM('cash', 'card', 'qr', 'other'),
+  amount_received DECIMAL(10,2) NULL,         -- เงินสดที่รับมา (เฉพาะจ่ายเงินสด)
+  paid_at         TIMESTAMP NULL DEFAULT NULL,
+  paid_by         INT NULL,                   -- พนักงานที่รับชำระเงิน
   status          ENUM('placed', 'preparing', 'ready', 'served',
                         'completed', 'cancelled') NOT NULL DEFAULT 'placed',
   CONSTRAINT fk_orders_table
@@ -168,6 +172,9 @@ CREATE TABLE orders (
     ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_orders_employee
     FOREIGN KEY (employee_id) REFERENCES employee(employee_id)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_orders_paid_by
+    FOREIGN KEY (paid_by) REFERENCES employee(employee_id)
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 

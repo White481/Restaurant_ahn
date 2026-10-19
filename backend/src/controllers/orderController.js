@@ -79,6 +79,11 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
         throw new HttpError(400, `status must be one of: ${orderModel.VALID_STATUSES.join(', ')}`);
     }
 
+    // การปิดออเดอร์ต้องผ่านการรับชำระเงินเสมอ (เพื่อให้ออเดอร์ที่ "เสร็จสิ้น" มีข้อมูลการชำระเงินครบ)
+    if (status === 'completed') {
+        throw new HttpError(400, 'Use POST /api/orders/:id/pay to complete an order');
+    }
+
     const found = await orderModel.updateStatus(id, status);
     if (!found) throw new HttpError(404, 'Order not found');
 
@@ -94,4 +99,33 @@ exports.getOrderStatus = asyncHandler(async (req, res) => {
     if (!order) throw new HttpError(404, 'Order not found');
 
     res.json(order);
+});
+
+// POST /api/orders/:id/pay  { payment_method: 'cash'|'card'|'qr', amount_received? (จำเป็นเมื่อเป็น cash) }
+const PAY_METHODS = ['cash', 'card', 'qr'];
+exports.payOrder = asyncHandler(async (req, res) => {
+    const id = toPositiveInt(req.params.id);
+    if (id === null) throw new HttpError(400, 'Invalid order id');
+
+    const { payment_method, amount_received } = req.body || {};
+    if (!PAY_METHODS.includes(payment_method)) {
+        throw new HttpError(400, `payment_method must be one of: ${PAY_METHODS.join(', ')}`);
+    }
+
+    let received = null;
+    if (payment_method === 'cash') {
+        const n = Number(amount_received);
+        const missing = amount_received === undefined || amount_received === null || amount_received === '';
+        if (missing || !Number.isFinite(n) || n < 0 || n > 9999999.99) {
+            throw new HttpError(400, 'amount_received must be a valid amount for cash payments');
+        }
+        received = n;
+    }
+
+    const result = await orderModel.payOrder(id, {
+        payment_method,
+        amount_received: received,
+        paid_by: req.user.employee_id // มาจาก token เท่านั้น
+    });
+    res.json({ message: 'Payment recorded', ...result });
 });

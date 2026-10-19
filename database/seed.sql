@@ -12,15 +12,15 @@ INSERT INTO dining_table (table_number, capacity, status) VALUES
   ('T5', 6, 'available');
 
 -- เมนู
-INSERT INTO menu_item (item_name, category, price) VALUES
-  ('ข้าวผัดกะเพราหมูสับ', 'Main',      60.00),
-  ('ผัดไทยกุ้งสด',        'Main',      80.00),
-  ('ข้าวมันไก่',          'Main',      55.00),
-  ('ต้มยำกุ้ง',           'Soup',     120.00),
-  ('ส้มตำไทย',           'Salad',     50.00),
-  ('ไก่ทอด',             'Appetizer', 70.00),
-  ('ชาเย็น',             'Drink',     35.00),
-  ('น้ำเปล่า',            'Drink',     10.00);
+INSERT INTO menu_item (item_name, item_name_en, category, price) VALUES
+  ('ข้าวผัดกะเพราหมูสับ', 'Basil Pork Stir-fry with Rice', 'Main',      60.00),
+  ('ผัดไทยกุ้งสด',        'Pad Thai with Fresh Prawns',    'Main',      80.00),
+  ('ข้าวมันไก่',          'Hainanese Chicken Rice',        'Main',      55.00),
+  ('ต้มยำกุ้ง',           'Tom Yum Goong (Spicy Prawn Soup)', 'Soup',  120.00),
+  ('ส้มตำไทย',           'Papaya Salad (Som Tam)',        'Salad',     50.00),
+  ('ไก่ทอด',             'Fried Chicken',                 'Appetizer', 70.00),
+  ('ชาเย็น',             'Thai Iced Tea',                 'Drink',     35.00),
+  ('น้ำเปล่า',            'Drinking Water',                'Drink',     10.00);
 
 -- วัตถุดิบ
 INSERT INTO ingredient (ingredient_name, quantity_in_stock, unit) VALUES

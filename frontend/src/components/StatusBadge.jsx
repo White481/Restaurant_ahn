@@ -1,4 +1,4 @@
-import { STATUS_LABEL } from './status.js';
+import { useLang } from '../i18n/LanguageContext.jsx';
 
 // สีสถานะล็อกไว้ชุดเดียวทั้งแอป เพื่อให้จำสีได้โดยไม่ต้องอ่านข้อความ
 const STYLE = {
@@ -11,9 +11,10 @@ const STYLE = {
 };
 
 export default function StatusBadge({ status }) {
+  const { t } = useLang();
   return (
     <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${STYLE[status] || 'bg-stone-100 text-stone-700'}`}>
-      {STATUS_LABEL[status] || status}
+      {t(`status.${status}`)}
     </span>
   );
 }

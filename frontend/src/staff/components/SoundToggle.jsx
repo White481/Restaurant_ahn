@@ -1,4 +1,7 @@
+import { useLang } from '../../i18n/LanguageContext.jsx';
+
 export default function SoundToggle({ enabled, onToggle }) {
+  const { t } = useLang();
   return (
     <button
       type="button"
@@ -10,7 +13,7 @@ export default function SoundToggle({ enabled, onToggle }) {
           : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
       }`}
     >
-      {enabled ? '🔔 เสียงเปิด' : '🔕 เปิดเสียงแจ้งเตือน'}
+      {enabled ? t('sound.on') : t('sound.off')}
     </button>
   );
 }

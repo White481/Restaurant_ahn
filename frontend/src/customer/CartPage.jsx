@@ -5,12 +5,15 @@ import { formatBaht } from '../components/status.js';
 import Button, { buttonClasses } from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import { inputClass, labelClass } from '../ui/fields.js';
+import { localizedName } from '../i18n/index.js';
+import { useLang } from '../i18n/LanguageContext.jsx';
 import { useCart } from './CartContext.jsx';
 import TopBar from './components/TopBar.jsx';
 
 // หน้ายืนยันการสั่งอาหาร (checkout)
 export default function CartPage() {
   const navigate = useNavigate();
+  const { lang, t } = useLang();
   const { items, tableId, setTableId, setQuantity, clear, totalPrice } = useCart();
   const [orderType, setOrderType] = useState('dine_in');
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -28,10 +31,10 @@ export default function CartPage() {
           </div>
         </header>
         <div className="mx-auto max-w-xl px-4 py-10">
-          <h1 className="mb-4 text-2xl font-bold">ตะกร้า</h1>
-          <EmptyState icon="🛒" title="ยังไม่มีรายการในตะกร้า">
+          <h1 className="mb-4 text-2xl font-bold">{t('checkout.title')}</h1>
+          <EmptyState icon="🛒" title={t('checkout.empty')}>
             <Link className={buttonClasses('primary', 'md')} to="/">
-              กลับไปเลือกเมนู
+              {t('checkout.backToMenu')}
             </Link>
           </EmptyState>
         </div>
@@ -45,7 +48,7 @@ export default function CartPage() {
     event.preventDefault();
     setError('');
     if (!effectiveTable) {
-      setError('กรุณาระบุหมายเลขโต๊ะ');
+      setError(t('checkout.needTable'));
       return;
     }
 
@@ -83,17 +86,19 @@ export default function CartPage() {
       </header>
       <div className="mx-auto max-w-xl px-4 py-5">
         <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">ตะกร้า</h1>
+          <h1 className="text-2xl font-bold">{t('checkout.title')}</h1>
           <Link to="/" className="text-sm font-semibold text-brand-700 underline">
-            ← กลับไปเมนู
+            {t('checkout.backLink')}
           </Link>
         </header>
 
         <ul className="mb-5 flex flex-col gap-2">
-          {items.map((item) => (
+          {items.map((item) => {
+            const name = localizedName(item, lang);
+            return (
             <li key={item.menu_item_id} className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-3">
               <div className="min-w-0">
-                <p className="truncate font-semibold">{item.item_name}</p>
+                <p className="truncate font-semibold">{name}</p>
                 <p className="text-sm text-stone-500">
                   {formatBaht(item.price)} × {item.quantity} = {formatBaht(item.price * item.quantity)}
                 </p>
@@ -101,7 +106,7 @@ export default function CartPage() {
               <div className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 p-1">
                 <button
                   type="button"
-                  aria-label={`ลด ${item.item_name}`}
+                  aria-label={t('menu.remove', { name })}
                   onClick={() => setQuantity(item.menu_item_id, item.quantity - 1)}
                   className="grid size-9 place-items-center rounded-full bg-white text-xl leading-none text-brand-700"
                 >
@@ -110,7 +115,7 @@ export default function CartPage() {
                 <span className="min-w-6 text-center font-bold text-brand-800">{item.quantity}</span>
                 <button
                   type="button"
-                  aria-label={`เพิ่ม ${item.item_name}`}
+                  aria-label={t('menu.add', { name })}
                   onClick={() => setQuantity(item.menu_item_id, item.quantity + 1)}
                   className="grid size-9 place-items-center rounded-full bg-brand-600 text-xl leading-none text-white"
                 >
@@ -118,52 +123,53 @@ export default function CartPage() {
                 </button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-4">
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium text-stone-600">ประเภทออเดอร์</legend>
+            <legend className="mb-1 text-sm font-medium text-stone-600">{t('checkout.orderType')}</legend>
             <div className="flex gap-2">
               <label className={radioClass(orderType === 'dine_in')}>
                 <input type="radio" name="orderType" value="dine_in" checked={orderType === 'dine_in'} onChange={() => setOrderType('dine_in')} className="sr-only" />
-                🍽️ ทานที่ร้าน
+                🍽️ {t('orderType.dine_in')}
               </label>
               <label className={radioClass(orderType === 'take_away')}>
                 <input type="radio" name="orderType" value="take_away" checked={orderType === 'take_away'} onChange={() => setOrderType('take_away')} className="sr-only" />
-                🥡 กลับบ้าน
+                🥡 {t('orderType.take_away')}
               </label>
             </div>
           </fieldset>
 
           {tableId ? (
             <p className="text-stone-600">
-              สั่งสำหรับ <strong>โต๊ะ {tableId}</strong>
+              {t('checkout.orderingFor')} <strong>{t('top.table', { n: tableId })}</strong>
             </p>
           ) : (
             <label className={labelClass}>
-              หมายเลขโต๊ะ
-              <input type="number" min="1" inputMode="numeric" value={tableInput} onChange={(e) => setTableInput(e.target.value)} placeholder="เช่น 1" className={inputClass} />
+              {t('checkout.tableNo')}
+              <input type="number" min="1" inputMode="numeric" value={tableInput} onChange={(e) => setTableInput(e.target.value)} placeholder={t('checkout.tablePh')} className={inputClass} />
             </label>
           )}
 
           <label className={labelClass}>
-            วิธีชำระเงิน
+            {t('checkout.payMethod')}
             <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputClass}>
-              <option value="">เลือกตอนจ่ายเงิน</option>
-              <option value="cash">เงินสด</option>
-              <option value="card">บัตร</option>
-              <option value="qr">QR</option>
+              <option value="">{t('checkout.payLater')}</option>
+              <option value="cash">{t('payment.cash')}</option>
+              <option value="card">{t('payment.card')}</option>
+              <option value="qr">{t('payment.qr')}</option>
             </select>
           </label>
 
           <label className={labelClass}>
-            ข้อความถึงครัว (ไม่บังคับ)
-            <textarea rows="3" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น เผ็ดน้อย ไม่ใส่ผัก" className={inputClass} />
+            {t('checkout.note')}
+            <textarea rows="3" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('checkout.notePh')} className={inputClass} />
           </label>
 
           <div className="flex items-center justify-between border-t border-dashed border-stone-300 pt-3 text-lg">
-            <span>รวมทั้งหมด</span>
+            <span>{t('common.totalAll')}</span>
             <strong className="text-brand-700">{formatBaht(totalPrice)}</strong>
           </div>
 
@@ -174,7 +180,7 @@ export default function CartPage() {
           )}
 
           <Button type="submit" size="lg" disabled={submitting} className="w-full">
-            {submitting ? 'กำลังส่งออเดอร์...' : 'ยืนยันสั่งอาหาร'}
+            {submitting ? t('checkout.submitting') : t('checkout.submit')}
           </Button>
         </form>
       </div>

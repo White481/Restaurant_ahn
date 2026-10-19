@@ -4,12 +4,12 @@ import {
   LATE_MINUTES,
   NEXT_STEP,
   ORDER_TYPE_ICON,
-  ORDER_TYPE_LABEL,
-  PAYMENT_LABEL,
   TIMED_STATUSES,
   WARN_MINUTES,
   formatBaht
 } from '../../components/status.js';
+import { formatTime, localizedName } from '../../i18n/index.js';
+import { useLang } from '../../i18n/LanguageContext.jsx';
 
 const BORDER = {
   ok: 'border-stone-200 dark:border-stone-700',
@@ -26,11 +26,14 @@ const TIMER = {
 };
 
 // การ์ดออเดอร์ 1 ใบ: ตัวจับเวลาที่รอมา (เหลือง >10 นาที, แดง >20 นาที), รายการอาหาร, โน้ต, ปุ่มขั้นถัดไปปุ่มใหญ่ปุ่มเดียว
-export default function OrderCard({ order, now, fresh, busy, onAdvance, onCancel }) {
+// canPay: ผู้ใช้ role นี้รับชำระเงินได้ไหม (ถ้าไม่ได้ จะไม่แสดงปุ่ม "ชำระเงิน" ในคอลัมน์ "เสิร์ฟแล้ว")
+export default function OrderCard({ order, now, fresh, busy, canPay, onAdvance, onCancel }) {
+  const { lang, t } = useLang();
   const orderedAt = new Date(order.order_date);
   const ageMinutes = Math.max(0, Math.floor((now - orderedAt.getTime()) / 60000));
   const urgency = TIMED_STATUSES.includes(order.status) ? (ageMinutes >= LATE_MINUTES ? 'late' : ageMinutes >= WARN_MINUTES ? 'warn' : 'ok') : 'none';
-  const next = NEXT_STEP[order.status];
+  const nextStatus = NEXT_STEP[order.status];
+  const showNext = nextStatus && (nextStatus !== 'completed' || canPay);
 
   return (
     <article
@@ -40,19 +43,17 @@ export default function OrderCard({ order, now, fresh, busy, onAdvance, onCancel
     >
       <header className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-lg font-bold">
-            #{order.order_id} · โต๊ะ {order.table_id}
-          </h3>
+          <h3 className="text-lg font-bold">{t('orders.cardTitle', { id: order.order_id, table: order.table_id })}</h3>
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            {ORDER_TYPE_ICON[order.order_type]} {ORDER_TYPE_LABEL[order.order_type] || order.order_type}
-            {order.payment_method ? ` · ${PAYMENT_LABEL[order.payment_method] || order.payment_method}` : ''}
+            {ORDER_TYPE_ICON[order.order_type]} {t(`orderType.${order.order_type}`)}
+            {order.payment_method ? ` · ${t(`payment.${order.payment_method}`)}` : ''}
           </p>
         </div>
         <div className="text-right text-sm">
-          <p className="tabular-nums text-stone-500 dark:text-stone-400">{orderedAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p className="tabular-nums text-stone-500 dark:text-stone-400">{formatTime(orderedAt, lang)}</p>
           {urgency !== 'none' && (
             <p className={TIMER[urgency]} data-testid="timer">
-              {ageMinutes < 1 ? 'เพิ่งสั่ง' : `รอมา ${ageMinutes} นาที`}
+              {ageMinutes < 1 ? t('orders.justNow') : t('orders.waiting', { n: ageMinutes })}
             </p>
           )}
         </div>
@@ -62,7 +63,7 @@ export default function OrderCard({ order, now, fresh, busy, onAdvance, onCancel
         {order.items.map((item) => (
           <li key={item.order_item_id} className="flex gap-2">
             <span className="min-w-8 font-bold text-brand-700 dark:text-brand-300">{item.quantity}×</span>
-            <span>{item.item_name}</span>
+            <span>{localizedName(item, lang)}</span>
           </li>
         ))}
       </ul>
@@ -72,19 +73,19 @@ export default function OrderCard({ order, now, fresh, busy, onAdvance, onCancel
       )}
 
       <div className="mb-3 flex items-center justify-between border-t border-dashed border-stone-300 pt-2 dark:border-stone-700">
-        <span className="text-stone-500 dark:text-stone-400">รวม</span>
+        <span className="text-stone-500 dark:text-stone-400">{t('orders.total')}</span>
         <strong className="text-lg">{formatBaht(order.total_price)}</strong>
       </div>
 
       <div className="flex gap-2">
-        {next && (
-          <Button size="lg" className="flex-1" disabled={busy} onClick={() => onAdvance(order, next.status)}>
-            {next.label} →
+        {showNext && (
+          <Button size="lg" className="flex-1" disabled={busy} onClick={() => onAdvance(order, nextStatus)}>
+            {t(`next.${order.status}`)} →
           </Button>
         )}
         {CANCELLABLE.includes(order.status) && (
-          <Button variant="danger" size="lg" disabled={busy} onClick={() => onCancel(order)} aria-label={`ยกเลิกออเดอร์ #${order.order_id}`}>
-            ยกเลิก
+          <Button variant="danger" size="lg" disabled={busy} onClick={() => onCancel(order)} aria-label={t('orders.cancelAria', { id: order.order_id })}>
+            {t('orders.cancelBtn')}
           </Button>
         )}
       </div>

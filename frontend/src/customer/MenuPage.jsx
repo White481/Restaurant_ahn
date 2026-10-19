@@ -6,17 +6,17 @@ import Button from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
 import { inputClass } from '../ui/fields.js';
+import { useLang } from '../i18n/LanguageContext.jsx';
 import { useCart } from './CartContext.jsx';
 import TopBar from './components/TopBar.jsx';
-import CategoryTabs from './components/CategoryTabs.jsx';
+import CategoryTabs, { OTHER_CATEGORY } from './components/CategoryTabs.jsx';
 import MenuGrid from './components/MenuGrid.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import CartButton from './components/CartButton.jsx';
 
-const NO_CATEGORY = 'อื่นๆ';
-
 export default function MenuPage() {
   const [params] = useSearchParams();
+  const { t } = useLang();
   const { items, tableId, setTableId, addItem, setQuantity, totalQty, totalPrice } = useCart();
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,15 +46,15 @@ export default function MenuPage() {
     };
   }, [reloadKey]);
 
-  const categories = useMemo(() => [...new Set(menus.map((m) => m.category || NO_CATEGORY))], [menus]);
+  const categories = useMemo(() => [...new Set(menus.map((m) => m.category || OTHER_CATEGORY))], [menus]);
 
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const byCategory = new Map();
     for (const menu of menus) {
-      const cat = menu.category || NO_CATEGORY;
+      const cat = menu.category || OTHER_CATEGORY;
       if (category !== 'all' && cat !== category) continue;
-      if (needle && !menu.item_name.toLowerCase().includes(needle)) continue;
+      if (needle && !`${menu.item_name} ${menu.item_name_en || ''}`.toLowerCase().includes(needle)) continue;
       if (!byCategory.has(cat)) byCategory.set(cat, []);
       byCategory.get(cat).push(menu);
     }
@@ -73,8 +73,8 @@ export default function MenuPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="🔍 ค้นหาเมนู"
-              aria-label="ค้นหาเมนู"
+              placeholder={t('menu.searchPlaceholder')}
+              aria-label={t('menu.search')}
               className={`${inputClass} min-w-0 flex-1`}
             />
             <CartButton count={totalQty} onClick={() => setCartOpen(true)} />
@@ -85,7 +85,7 @@ export default function MenuPage() {
 
       <main className="mx-auto max-w-5xl px-4 py-5">
         {loading && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-label="กำลังโหลดเมนู">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-label={t('menu.loadingAria')}>
             {Array.from({ length: 8 }, (_, i) => (
               <Skeleton key={i} className="h-52" />
             ))}
@@ -93,15 +93,15 @@ export default function MenuPage() {
         )}
 
         {!loading && error && (
-          <EmptyState icon="⚠️" title="โหลดเมนูไม่สำเร็จ" hint={error}>
-            <Button onClick={() => setReloadKey((k) => k + 1)}>ลองใหม่</Button>
+          <EmptyState icon="⚠️" title={t('menu.loadFail')} hint={error}>
+            <Button onClick={() => setReloadKey((k) => k + 1)}>{t('common.retry')}</Button>
           </EmptyState>
         )}
 
-        {!loading && !error && menus.length === 0 && <EmptyState title="ยังไม่มีเมนู" hint="กรุณาติดต่อพนักงาน" />}
+        {!loading && !error && menus.length === 0 && <EmptyState title={t('menu.none')} hint={t('menu.noneHint')} />}
 
         {!loading && !error && menus.length > 0 && groups.length === 0 && (
-          <EmptyState icon="🔍" title="ไม่พบเมนูที่ค้นหา" hint="ลองเปลี่ยนคำค้นหรือเลือกหมวดอื่น" />
+          <EmptyState icon="🔍" title={t('menu.noResults')} hint={t('menu.noResultsHint')} />
         )}
 
         {!loading && !error && groups.length > 0 && <MenuGrid groups={groups} qtyOf={qtyOf} onAdd={addItem} onChange={setQuantity} />}
@@ -115,7 +115,7 @@ export default function MenuPage() {
             onClick={() => setCartOpen(true)}
             className="mx-auto flex min-h-14 w-full max-w-xl items-center justify-between rounded-2xl bg-brand-600 px-5 text-white shadow-lg hover:bg-brand-700"
           >
-            <span className="font-semibold">ดูตะกร้า ({totalQty} รายการ)</span>
+            <span className="font-semibold">{t('cart.viewBar', { n: totalQty })}</span>
             <strong>{formatBaht(totalPrice)}</strong>
           </button>
         </div>

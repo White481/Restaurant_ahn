@@ -1,21 +1,25 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import Button from '../../ui/Button.jsx';
+import LangSwitch from '../../components/LangSwitch.jsx';
 import ModeSwitch from '../../components/ModeSwitch.jsx';
 import { useNow } from '../../hooks/useNow.js';
 import { useTheme } from '../../hooks/useTheme.js';
+import { formatTime } from '../../i18n/index.js';
+import { useLang } from '../../i18n/LanguageContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 
 // รายการเมนูนำทาง: เพิ่มหน้าใหม่ (Stocks / Employees / Reports) ที่นี่เมื่อ backend มี API รองรับ
 const NAV = [
-  { to: '/staff', label: 'ออเดอร์', icon: '🧾', end: true },
-  { to: '/staff/menu', label: 'เมนู', icon: '📋', roles: ['admin'] }
+  { to: '/staff', labelKey: 'staff.nav.orders', icon: '🧾', end: true },
+  { to: '/staff/menu', labelKey: 'staff.nav.menu', icon: '📋', roles: ['admin'] }
 ];
 
-// โครงหน้าฝั่งพนักงาน: Sidebar (จอใหญ่) / แถบนำทางล่างจอ (มือถือ) + แถบบน (นาฬิกา ธีม ผู้ใช้)
+// โครงหน้าฝั่งพนักงาน: Sidebar (จอใหญ่) / แถบนำทางล่างจอ (มือถือ) + แถบบน (นาฬิกา ธีม ผู้ใช้ ภาษา)
 export default function StaffLayout({ title, headerRight, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { lang, t } = useLang();
   const theme = useTheme(); // ผูกธีมกับหน้าฝั่งพนักงานเท่านั้น
   const now = useNow(30000);
   const items = NAV.filter((item) => !item.roles || item.roles.includes(user.role));
@@ -38,11 +42,11 @@ export default function StaffLayout({ title, headerRight, children }) {
         <Link to="/staff" className="mb-4 px-3 py-2 text-lg font-bold text-brand-700 dark:text-brand-300">
           🍜 Restaurant OMS
         </Link>
-        <nav aria-label="เมนูหลัก" className="flex flex-col gap-1">
+        <nav aria-label={t('staff.nav.aria')} className="flex flex-col gap-1">
           {items.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
               <span aria-hidden="true">{item.icon}</span>
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -52,9 +56,7 @@ export default function StaffLayout({ title, headerRight, children }) {
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900">
           <div className="flex items-baseline gap-3">
             <h1 className="text-xl font-bold">{title}</h1>
-            <span className="text-sm tabular-nums text-stone-500 dark:text-stone-400">
-              {new Date(now).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-            </span>
+            <span className="text-sm tabular-nums text-stone-500 dark:text-stone-400">{formatTime(now, lang)}</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {headerRight}
@@ -63,8 +65,9 @@ export default function StaffLayout({ title, headerRight, children }) {
               {user.username} · {user.role}
             </span>
             <Button variant="secondary" size="sm" onClick={handleLogout}>
-              ออกจากระบบ
+              {t('staff.logout')}
             </Button>
+            <LangSwitch />
             <ModeSwitch />
           </div>
         </header>
@@ -73,7 +76,7 @@ export default function StaffLayout({ title, headerRight, children }) {
       </div>
 
       <nav
-        aria-label="เมนูหลัก (มือถือ)"
+        aria-label={t('staff.nav.ariaMobile')}
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
       >
         {items.map((item) => (
@@ -90,7 +93,7 @@ export default function StaffLayout({ title, headerRight, children }) {
             <span className="text-xl" aria-hidden="true">
               {item.icon}
             </span>
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </nav>

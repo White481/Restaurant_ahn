@@ -7,14 +7,16 @@ import LoginPage from './staff/LoginPage.jsx';
 import OrdersPage from './staff/OrdersPage.jsx';
 import MenuAdminPage from './staff/MenuAdminPage.jsx';
 import RequireAuth from './staff/RequireAuth.jsx';
+import { useLang } from './i18n/LanguageContext.jsx';
 
 function NotFound() {
+  const { t } = useLang();
   return (
     <div className="grid min-h-screen place-items-center bg-stone-50 px-4 text-center text-stone-900">
       <div>
-        <h1 className="mb-4 text-2xl font-bold">ไม่พบหน้านี้</h1>
+        <h1 className="mb-4 text-2xl font-bold">{t('notFound.title')}</h1>
         <Link className={buttonClasses('primary', 'md')} to="/">
-          กลับหน้าแรก
+          {t('notFound.home')}
         </Link>
       </div>
     </div>

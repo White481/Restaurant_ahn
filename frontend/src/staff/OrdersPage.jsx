@@ -5,8 +5,9 @@ import Button from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
 import { useToast } from '../ui/Toast.jsx';
-import { FINISHED_STATUSES } from '../components/status.js';
+import { FINISHED_STATUSES, PAYMENT_ROLES } from '../components/status.js';
 import { useAlertSound } from '../hooks/useAlertSound.js';
+import { useLang } from '../i18n/LanguageContext.jsx';
 import { useNow } from '../hooks/useNow.js';
 import { usePolling } from '../hooks/usePolling.js';
 import { useAuth } from './AuthContext.jsx';
@@ -14,6 +15,8 @@ import StaffLayout from './components/StaffLayout.jsx';
 import OrderBoard from './components/OrderBoard.jsx';
 import HistoryList from './components/HistoryList.jsx';
 import CancelModal from './components/CancelModal.jsx';
+import PaymentDialog from './components/PaymentDialog.jsx';
+import ReceiptDialog from './components/ReceiptDialog.jsx';
 import LiveIndicator from './components/LiveIndicator.jsx';
 import SoundToggle from './components/SoundToggle.jsx';
 
@@ -21,8 +24,9 @@ const REFRESH_MS = 5000;
 const FRESH_MS = 6000; // ไฮไลต์ออเดอร์ใหม่นานแค่ไหน
 
 export default function OrdersPage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLang();
   const toast = useToast();
   const sound = useAlertSound();
   const now = useNow(15000); // ตัวจับเวลาบนการ์ดคลาดเคลื่อนได้ไม่เกินช่วงนี้
@@ -34,6 +38,9 @@ export default function OrdersPage() {
   const [pending, setPending] = useState({}); // { orderId: สถานะที่กำลังเปลี่ยนไป } (optimistic update)
   const [freshIds, setFreshIds] = useState(() => new Set());
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [payTarget, setPayTarget] = useState(null); // ออเดอร์ที่กำลังรับชำระเงิน
+  const [receiptOrder, setReceiptOrder] = useState(null); // ออเดอร์ที่เปิดดู/พิมพ์ใบเสร็จ
+  const canPay = PAYMENT_ROLES.includes(user.role);
 
   const knownIds = useRef(null); // ออเดอร์ที่เคยเห็นแล้ว ใช้ตรวจว่ามี "ออเดอร์ใหม่" เข้ามาไหม
   const freshTimers = useRef([]);
@@ -89,12 +96,43 @@ export default function OrdersPage() {
       await refresh();
     } catch (e) {
       if (e.status === 401) return handleUnauthorized();
-      toast.error(`เปลี่ยนสถานะออเดอร์ #${id} ไม่สำเร็จ: ${e.message}`);
+      toast.error(t('orders.changeFail', { id, msg: e.message }));
     } finally {
       setPending((p) => {
         const { [id]: _removed, ...rest } = p;
         return rest;
       });
+    }
+  }
+
+  // ปุ่มหลักบนการ์ด: "ปิดออเดอร์" (completed) ต้องผ่านหน้ารับชำระเงินเสมอ ขั้นอื่นเปลี่ยนสถานะได้เลย
+  function handleAdvance(order, status) {
+    if (status === 'completed') setPayTarget(order);
+    else changeStatus(order, status);
+  }
+
+  // รับชำระเงิน: สำเร็จแล้วเปิดใบเสร็จทันที (เก็บข้อมูลที่เพิ่งบันทึกไว้ในตัวแปร ไม่ต้องรอ refresh)
+  // ถ้าล้มเหลว โยน error ต่อให้หน้าต่างชำระเงินแสดงข้อความ
+  async function confirmPayment(payload) {
+    try {
+      const result = await api.payOrder(payTarget.order_id, payload);
+      const paid = {
+        ...payTarget,
+        status: 'completed',
+        payment_method: payload.payment_method,
+        amount_received: result.amount_received,
+        paid_at: new Date().toISOString(),
+        cashier_name: user.employee_name
+      };
+      setPayTarget(null);
+      setReceiptOrder(paid);
+      refresh();
+    } catch (e) {
+      if (e.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      throw e;
     }
   }
 
@@ -118,7 +156,7 @@ export default function OrdersPage() {
 
   return (
     <StaffLayout
-      title="ออเดอร์"
+      title={t('staff.title.orders')}
       headerRight={
         <>
           <LiveIndicator lastUpdated={lastUpdated} error={error} />
@@ -126,17 +164,17 @@ export default function OrdersPage() {
         </>
       }
     >
-      <div role="tablist" aria-label="มุมมองออเดอร์" className="mb-4 inline-flex gap-1 rounded-xl bg-white p-1 dark:bg-stone-900">
+      <div role="tablist" aria-label={t('orders.viewAria')} className="mb-4 inline-flex gap-1 rounded-xl bg-white p-1 dark:bg-stone-900">
         <button type="button" role="tab" aria-selected={view === 'board'} onClick={() => setView('board')} className={tabClass(view === 'board')}>
-          กระดาน ({active.length})
+          {t('orders.tabBoard', { n: active.length })}
         </button>
         <button type="button" role="tab" aria-selected={view === 'history'} onClick={() => setView('history')} className={tabClass(view === 'history')}>
-          ประวัติ ({finished.length})
+          {t('orders.tabHistory', { n: finished.length })}
         </button>
       </div>
 
       {orders === null && !error && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="กำลังโหลดออเดอร์">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label={t('orders.loadingAria')}>
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-64" />
           ))}
@@ -144,17 +182,19 @@ export default function OrdersPage() {
       )}
 
       {orders === null && error && (
-        <EmptyState icon="⚠️" title="โหลดออเดอร์ไม่สำเร็จ" hint={error}>
-          <Button onClick={refresh}>ลองใหม่</Button>
+        <EmptyState icon="⚠️" title={t('orders.loadFail')} hint={error}>
+          <Button onClick={refresh}>{t('common.retry')}</Button>
         </EmptyState>
       )}
 
       {orders !== null && view === 'board' && (
-        <OrderBoard orders={active} now={now} freshIds={freshIds} pendingIds={pendingIds} onAdvance={changeStatus} onCancel={setCancelTarget} />
+        <OrderBoard orders={active} now={now} freshIds={freshIds} pendingIds={pendingIds} canPay={canPay} onAdvance={handleAdvance} onCancel={setCancelTarget} />
       )}
-      {orders !== null && view === 'history' && <HistoryList orders={finished} />}
+      {orders !== null && view === 'history' && <HistoryList orders={finished} onReceipt={setReceiptOrder} />}
 
       <CancelModal order={cancelTarget} onClose={() => setCancelTarget(null)} onConfirm={confirmCancel} />
+      {payTarget && <PaymentDialog key={payTarget.order_id} order={payTarget} onClose={() => setPayTarget(null)} onConfirm={confirmPayment} />}
+      {receiptOrder && <ReceiptDialog key={receiptOrder.order_id} order={receiptOrder} onClose={() => setReceiptOrder(null)} />}
     </StaffLayout>
   );
 }

@@ -1,0 +1,27 @@
+/* โหมดพิมพ์: พิมพ์เฉพาะใบเสร็จ (80 มม.) ที่ถูกวางไว้นอก #root ด้วย portal */
+.receipt-print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  #root {
+    display: none !important;
+  }
+  .receipt-print-root {
+    display: block;
+  }
+  .receipt-print-root .receipt-paper {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    box-shadow: none;
+  }
+}

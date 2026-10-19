@@ -1,4 +1,6 @@
 // ชั้นเรียก API ที่เดียว: component ไม่ต้องรู้เรื่อง fetch / header / token
+import { getStoredLang, translate } from '../i18n/index.js';
+
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 const TOKEN_KEY = 'oms_token';
 
@@ -29,7 +31,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
       body: body !== undefined ? JSON.stringify(body) : undefined
     });
   } catch {
-    throw new ApiError(0, 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบว่า backend เปิดอยู่');
+    throw new ApiError(0, translate(getStoredLang(), 'api.network'));
   }
 
   let data = null;
@@ -40,7 +42,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
   }
 
   if (!response.ok) {
-    throw new ApiError(response.status, (data && data.message) || `เกิดข้อผิดพลาด (${response.status})`);
+    throw new ApiError(response.status, (data && data.message) || translate(getStoredLang(), 'api.generic', { status: response.status }));
   }
   return data;
 }
@@ -57,5 +59,8 @@ export const api = {
 
   getOrders: () => request('/api/orders', { auth: true }),
   updateOrderStatus: (id, status) =>
-    request(`/api/orders/${id}`, { method: 'PATCH', body: { status }, auth: true })
+    request(`/api/orders/${id}`, { method: 'PATCH', body: { status }, auth: true }),
+
+  // รับชำระเงิน + ปิดออเดอร์ { payment_method: 'cash'|'card'|'qr', amount_received (เฉพาะ cash) }
+  payOrder: (id, body) => request(`/api/orders/${id}/pay`, { method: 'POST', body, auth: true })
 };

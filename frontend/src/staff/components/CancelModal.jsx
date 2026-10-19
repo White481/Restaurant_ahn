@@ -1,29 +1,31 @@
 import Button from '../../ui/Button.jsx';
 import Modal from '../../ui/Modal.jsx';
 import { formatBaht } from '../../components/status.js';
+import { useLang } from '../../i18n/LanguageContext.jsx';
 
 export default function CancelModal({ order, onClose, onConfirm }) {
+  const { t } = useLang();
   return (
     <Modal
       open={Boolean(order)}
       onClose={onClose}
-      title={order ? `ยกเลิกออเดอร์ #${order.order_id}?` : ''}
+      title={order ? t('cancel.title', { id: order.order_id }) : ''}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} autoFocus>
-            ไม่ยกเลิก
+            {t('cancel.keep')}
           </Button>
           <Button variant="dangerSolid" onClick={() => onConfirm(order)}>
-            ยกเลิกออเดอร์
+            {t('cancel.confirm')}
           </Button>
         </>
       }
     >
       {order && (
         <p>
-          โต๊ะ {order.table_id} · {order.items.length} รายการ · {formatBaht(order.total_price)}
+          {t('cancel.summary', { table: order.table_id, n: order.items.length, total: formatBaht(order.total_price) })}
           <br />
-          ลูกค้าจะเห็นสถานะ "ยกเลิก" ทันที และไม่มีปุ่มย้อนกลับในหน้านี้
+          {t('cancel.warn')}
         </p>
       )}
     </Modal>

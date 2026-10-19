@@ -5,18 +5,22 @@ import App from './App.jsx';
 import { CartProvider } from './customer/CartContext.jsx';
 import { AuthProvider } from './staff/AuthContext.jsx';
 import { ToastProvider } from './ui/Toast.jsx';
+import { LanguageProvider } from './i18n/LanguageContext.jsx';
 import './styles.css';
+import './print.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ToastProvider>
-        <AuthProvider>
-          <CartProvider>
-            <App />
-          </CartProvider>
-        </AuthProvider>
-      </ToastProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

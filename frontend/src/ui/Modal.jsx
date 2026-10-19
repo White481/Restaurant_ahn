@@ -36,7 +36,7 @@ export default function Modal({ open, onClose, title, children, footer }) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl outline-none dark:bg-stone-900 dark:text-stone-100"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl outline-none dark:bg-stone-900 dark:text-stone-100"
       >
         <h2 className="text-lg font-bold">{title}</h2>
         <div className="mt-2 text-stone-600 dark:text-stone-300">{children}</div>
