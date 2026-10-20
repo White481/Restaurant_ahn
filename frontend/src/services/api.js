@@ -62,5 +62,8 @@ export const api = {
     request(`/api/orders/${id}`, { method: 'PATCH', body: { status }, auth: true }),
 
   // รับชำระเงิน + ปิดออเดอร์ { payment_method: 'cash'|'card'|'qr', amount_received (เฉพาะ cash) }
-  payOrder: (id, body) => request(`/api/orders/${id}/pay`, { method: 'POST', body, auth: true })
+  payOrder: (id, body) => request(`/api/orders/${id}/pay`, { method: 'POST', body, auth: true }),
+
+  // แดชบอร์ดสำหรับ admin: สรุปยอดรายได้ ออเดอร์ เมนูขายดี สถานะโต๊ะ ฯลฯ
+  getDashboardStats: () => request('/api/dashboard', { auth: true })
 };

@@ -6,6 +6,7 @@ import OrderStatusPage from './customer/OrderStatusPage.jsx';
 import LoginPage from './staff/LoginPage.jsx';
 import OrdersPage from './staff/OrdersPage.jsx';
 import MenuAdminPage from './staff/MenuAdminPage.jsx';
+import DashboardPage from './staff/DashboardPage.jsx';
 import RequireAuth from './staff/RequireAuth.jsx';
 import { useLang } from './i18n/LanguageContext.jsx';
 
@@ -46,6 +47,14 @@ export default function App() {
         element={
           <RequireAuth roles={['admin']}>
             <MenuAdminPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/staff/dashboard"
+        element={
+          <RequireAuth roles={['admin']}>
+            <DashboardPage />
           </RequireAuth>
         }
       />

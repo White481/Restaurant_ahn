@@ -12,7 +12,8 @@ import ThemeToggle from './ThemeToggle.jsx';
 // รายการเมนูนำทาง: เพิ่มหน้าใหม่ (Stocks / Employees / Reports) ที่นี่เมื่อ backend มี API รองรับ
 const NAV = [
   { to: '/staff', labelKey: 'staff.nav.orders', icon: '🧾', end: true },
-  { to: '/staff/menu', labelKey: 'staff.nav.menu', icon: '📋', roles: ['admin'] }
+  { to: '/staff/menu', labelKey: 'staff.nav.menu', icon: '📋', roles: ['admin'] },
+  { to: '/staff/dashboard', labelKey: 'staff.nav.dashboard', icon: '📊', roles: ['admin'] }
 ];
 
 // โครงหน้าฝั่งพนักงาน: Sidebar (จอใหญ่) / แถบนำทางล่างจอ (มือถือ) + แถบบน (นาฬิกา ธีม ผู้ใช้ ภาษา)
