@@ -18,7 +18,8 @@ const app = express();
 app.use(express.json());
 
 // CORS_ORIGIN เว้นว่าง = อนุญาตทุกที่ (dev) / ใส่รายการโดเมนเมื่อใช้งานจริง
-const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
+// ตัด "/" ท้ายออก เพราะ Origin ที่เบราว์เซอร์ส่งมาไม่มี "/" ท้ายเสมอ (ใส่ https://x.vercel.app/ ก็ยังใช้ได้)
+const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean);
 app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : true }));
 
 // Routes
