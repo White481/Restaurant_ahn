@@ -20,7 +20,9 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    decimalNumbers: true // DECIMAL (เช่น price) ส่งกลับเป็น number แทน string
+    decimalNumbers: true, // DECIMAL (เช่น price) ส่งกลับเป็น number แทน string
+    // DB บน cloud (เช่น TiDB Cloud) บังคับเชื่อมต่อแบบเข้ารหัส: ตั้ง DB_SSL=true ใน .env / ในเครื่องตัวเองไม่ต้องตั้ง
+    ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined
 });
 
 module.exports = pool;

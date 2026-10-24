@@ -150,8 +150,10 @@ export default function OrdersPage() {
   const finished = useMemo(() => shown.filter((o) => FINISHED_STATUSES.includes(o.status)), [shown]);
 
   const tabClass = (selected) =>
-    `min-h-10 rounded-lg px-4 text-sm font-semibold ${
-      selected ? 'bg-brand-600 text-white' : 'text-stone-600 hover:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-800'
+    `min-h-9 px-4 text-[13px] font-bold tracking-wide transition ${
+      selected
+        ? 'bg-espresso text-stone-50 dark:bg-stone-100 dark:text-stone-950'
+        : 'text-stone-600 hover:bg-stone-200 hover:text-stone-950 dark:text-stone-300 dark:hover:bg-stone-800'
     }`;
 
   return (
@@ -164,7 +166,7 @@ export default function OrdersPage() {
         </>
       }
     >
-      <div role="tablist" aria-label={t('orders.viewAria')} className="mb-4 inline-flex gap-1 rounded-xl bg-white p-1 dark:bg-stone-900">
+      <div role="tablist" aria-label={t('orders.viewAria')} className="mb-5 inline-flex overflow-hidden rounded-lg border border-stone-300 bg-stone-50 dark:border-stone-700 dark:bg-stone-900">
         <button type="button" role="tab" aria-selected={view === 'board'} onClick={() => setView('board')} className={tabClass(view === 'board')}>
           {t('orders.tabBoard', { n: active.length })}
         </button>
@@ -174,7 +176,7 @@ export default function OrdersPage() {
       </div>
 
       {orders === null && !error && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label={t('orders.loadingAria')}>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4" aria-label={t('orders.loadingAria')}>
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-64" />
           ))}
@@ -182,7 +184,7 @@ export default function OrdersPage() {
       )}
 
       {orders === null && error && (
-        <EmptyState icon="⚠️" title={t('orders.loadFail')} hint={error}>
+        <EmptyState icon="alert" title={t('orders.loadFail')} hint={error}>
           <Button onClick={refresh}>{t('common.retry')}</Button>
         </EmptyState>
       )}

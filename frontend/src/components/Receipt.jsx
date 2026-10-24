@@ -24,7 +24,7 @@ export default function Receipt({ order, lang }) {
       className="receipt-paper flex w-full max-w-[320px] flex-col gap-3.5 bg-[#fffefb] p-6 text-[13px] leading-normal text-stone-900 shadow-md"
     >
       <header className="text-center">
-        <div className="text-xl font-bold tracking-wide">{SHOP.name}</div>
+        <div className="font-display text-2xl font-extrabold italic">{SHOP.name}</div>
         <div className="mt-1 text-[11px] text-stone-500">
           {SHOP.address[lang]} · {t('rc.tel')} {SHOP.phone}
           <br />

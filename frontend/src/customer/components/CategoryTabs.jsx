@@ -20,8 +20,10 @@ export default function CategoryTabs({ categories, active, onChange }) {
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(tab.value)}
-            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition ${
-              selected ? 'bg-brand-600 text-white' : 'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+            className={`min-h-9 shrink-0 rounded-full border px-4 text-[13px] font-bold tracking-wide transition ${
+              selected
+                ? 'border-brand-600 bg-brand-600 text-white'
+                : 'border-stone-300 bg-stone-200/70 text-stone-700 hover:border-stone-400 hover:text-stone-950'
             }`}
           >
             {tab.label}

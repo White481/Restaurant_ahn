@@ -4,6 +4,7 @@ import { api } from '../services/api.js';
 import { formatBaht } from '../components/status.js';
 import Button from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
+import Icon from '../ui/Icon.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
 import { inputClass } from '../ui/fields.js';
 import { useLang } from '../i18n/LanguageContext.jsx';
@@ -64,59 +65,73 @@ export default function MenuPage() {
   const qtyOf = (id) => items.find((i) => i.menu_item_id === id)?.quantity || 0;
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-28 text-stone-900">
-      <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
+    <div className="min-h-screen bg-paper pb-32 text-stone-950">
+      <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur-sm">
         <div className="mx-auto max-w-5xl">
           <TopBar tableId={tableId} />
           <div className="flex items-center gap-2 px-4 pb-3">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('menu.searchPlaceholder')}
-              aria-label={t('menu.search')}
-              className={`${inputClass} min-w-0 flex-1`}
-            />
+            <div className="relative min-w-0 flex-1">
+              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('menu.searchPlaceholder')}
+                aria-label={t('menu.search')}
+                className={`${inputClass} w-full pl-9`}
+              />
+            </div>
             <CartButton count={totalQty} onClick={() => setCartOpen(true)} />
           </div>
           {categories.length > 0 && <CategoryTabs categories={categories} active={category} onChange={setCategory} />}
         </div>
+        <div className="mx-auto max-w-5xl px-4">
+          <div className="rule-diamond" />
+        </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-5">
+      <main className="mx-auto max-w-5xl px-4 py-6">
         {loading && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-label={t('menu.loadingAria')}>
-            {Array.from({ length: 8 }, (_, i) => (
-              <Skeleton key={i} className="h-52" />
+          <div className="grid gap-x-10 gap-y-4 md:grid-cols-2" aria-label={t('menu.loadingAria')}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="flex gap-4 py-2">
+                <Skeleton className="size-24 shrink-0" />
+                <div className="flex flex-1 flex-col gap-2 pt-1">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
             ))}
           </div>
         )}
 
         {!loading && error && (
-          <EmptyState icon="⚠️" title={t('menu.loadFail')} hint={error}>
+          <EmptyState icon="alert" title={t('menu.loadFail')} hint={error}>
             <Button onClick={() => setReloadKey((k) => k + 1)}>{t('common.retry')}</Button>
           </EmptyState>
         )}
 
-        {!loading && !error && menus.length === 0 && <EmptyState title={t('menu.none')} hint={t('menu.noneHint')} />}
+        {!loading && !error && menus.length === 0 && <EmptyState icon="list" title={t('menu.none')} hint={t('menu.noneHint')} />}
 
         {!loading && !error && menus.length > 0 && groups.length === 0 && (
-          <EmptyState icon="🔍" title={t('menu.noResults')} hint={t('menu.noResultsHint')} />
+          <EmptyState icon="search" title={t('menu.noResults')} hint={t('menu.noResultsHint')} />
         )}
 
         {!loading && !error && groups.length > 0 && <MenuGrid groups={groups} qtyOf={qtyOf} onAdd={addItem} onChange={setQuantity} />}
-
       </main>
 
       {totalQty > 0 && !cartOpen && (
-        <div className="fixed inset-x-0 bottom-0 z-40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 z-40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="mx-auto flex min-h-14 w-full max-w-xl items-center justify-between rounded-2xl bg-brand-600 px-5 text-white shadow-lg hover:bg-brand-700"
+            className="rise-in mx-auto flex min-h-14 w-full max-w-xl items-center justify-between gap-3 rounded-xl bg-espresso px-5 text-stone-50 shadow-[0_16px_40px_-16px_rgb(42_33_27/0.7)] transition hover:bg-stone-900"
           >
-            <span className="font-semibold">{t('cart.viewBar', { n: totalQty })}</span>
-            <strong>{formatBaht(totalPrice)}</strong>
+            <span className="flex items-center gap-3 font-semibold">
+              <span className="grid size-7 place-items-center rounded-full bg-brand-600 text-xs font-bold tabular-nums">{totalQty}</span>
+              {t('cart.viewBar', { n: totalQty })}
+            </span>
+            <strong className="font-display text-xl tabular-nums text-brand-300">{formatBaht(totalPrice)}</strong>
           </button>
         </div>
       )}

@@ -1,6 +1,6 @@
 // ข้อมูลร้านที่พิมพ์บนใบเสร็จ: แก้ค่าตรงนี้ให้เป็นของร้านจริง (ที่อยู่แยกภาษาได้)
 export const SHOP = {
-  name: 'Restaurant OMS',
+  name: 'All About Food!',
   address: { th: '[ที่อยู่ร้าน]', en: '[Shop address]' },
   phone: '[เบอร์โทร]',
   taxId: '[เลข 13 หลัก]',

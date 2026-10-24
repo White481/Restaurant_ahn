@@ -109,7 +109,8 @@ CREATE TABLE menu_item (
   item_name     VARCHAR(100) NOT NULL,
   item_name_en  VARCHAR(100) NULL,            -- ชื่อภาษาอังกฤษ (ไม่บังคับ) ใช้กับหน้าเว็บ/ใบเสร็จภาษาอังกฤษ
   category      VARCHAR(50),
-  price         DECIMAL(10,2) NOT NULL
+  price         DECIMAL(10,2) NOT NULL,
+  image_url     VARCHAR(500) NULL             -- ลิงก์รูปเมนู (ไม่บังคับ) ไม่มีรูป = หน้าเว็บแสดงภาพแทน
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------

@@ -7,7 +7,7 @@ exports.getMenus = asyncHandler(async (req, res) => {
 });
 
 exports.createMenuItem = asyncHandler(async (req, res) => {
-    const { item_name, item_name_en, category, price } = req.body || {};
+    const { item_name, item_name_en, category, price, image_url } = req.body || {};
 
     if (typeof item_name !== 'string' || !item_name.trim() || item_name.length > 100) {
         throw new HttpError(400, 'item_name is required (max 100 characters)');
@@ -22,12 +22,18 @@ exports.createMenuItem = asyncHandler(async (req, res) => {
     if (price === undefined || price === null || price === '' || !Number.isFinite(priceNumber) || priceNumber < 0) {
         throw new HttpError(400, 'price must be a non-negative number');
     }
+    // รับเฉพาะลิงก์ http(s) กันการใส่ javascript: หรือ data: ลงใน <img src>
+    if (image_url !== undefined && image_url !== null && image_url !== '' &&
+        (typeof image_url !== 'string' || image_url.length > 500 || !/^https?:\/\/\S+$/i.test(image_url.trim()))) {
+        throw new HttpError(400, 'image_url must be an http(s) URL (max 500 characters)');
+    }
 
     const menuItemId = await menuModel.createMenuItem({
         item_name: item_name.trim(),
         item_name_en: typeof item_name_en === 'string' ? item_name_en.trim() : null,
         category,
-        price: priceNumber
+        price: priceNumber,
+        image_url: typeof image_url === 'string' && image_url.trim() ? image_url.trim() : null
     });
 
     res.status(201).json({

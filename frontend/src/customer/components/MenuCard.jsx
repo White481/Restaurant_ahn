@@ -1,71 +1,34 @@
-import { useState } from 'react';
 import { formatBaht } from '../../components/status.js';
 import { localizedName } from '../../i18n/index.js';
 import { useLang } from '../../i18n/LanguageContext.jsx';
-import { visualFor } from './categoryVisual.js';
+import MenuThumb from './MenuThumb.jsx';
+import QtyStepper from './QtyStepper.jsx';
 
+// เมนู 1 รายการ แบบบรรทัดในเมนูกระดาษ: รูป | ชื่อ ..... ราคา | ชื่ออีกภาษาเป็นบรรทัดรอง
 export default function MenuCard({ menu, quantity, onAdd, onChange }) {
-  const { lang, t } = useLang();
+  const { lang } = useLang();
   const name = localizedName(menu, lang);
-  const visual = visualFor(menu.category);
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = Boolean(menu.image_url) && !imageFailed; // รูปโหลดไม่ขึ้น -> กลับไปใช้ภาพแทน
+  // ชื่อในอีกภาษา (ถ้ามี) แสดงเป็นบรรทัดรอง ให้ดูเป็นเมนูสองภาษา
+  const altName = lang === 'en' ? (menu.item_name_en ? menu.item_name : null) : menu.item_name_en;
 
   return (
-    <li className="flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-      <div className={`relative aspect-[4/3] bg-linear-to-br ${visual.bg}`}>
-        {showImage ? (
-          <img
-            src={menu.image_url}
-            alt={name}
-            loading="lazy"
-            onError={() => setImageFailed(true)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="grid h-full place-items-center text-5xl" aria-hidden="true">
-            {visual.emoji}
-          </div>
+    <li className="flex gap-4 border-b border-dashed border-stone-300 py-4">
+      <MenuThumb src={menu.image_url} name={name} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-baseline gap-2">
+          <h3 className="min-w-0 text-[16px] font-semibold leading-snug text-stone-950">{name}</h3>
+          <span className="leader" aria-hidden="true" />
+          <span className="shrink-0 font-display text-xl font-bold tabular-nums text-brand-600">{formatBaht(menu.price)}</span>
+        </div>
+        {altName && (
+          <p className="mt-0.5 truncate font-display text-sm italic text-stone-500" lang={lang === 'en' ? 'th' : 'en'}>
+            {altName}
+          </p>
         )}
-      </div>
 
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <h3 className="line-clamp-2 min-h-10 font-semibold leading-snug text-stone-900">{name}</h3>
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <span className="text-lg font-bold text-brand-700">{formatBaht(menu.price)}</span>
-
-          {quantity === 0 ? (
-            <button
-              type="button"
-              aria-label={t('menu.add', { name })}
-              onClick={onAdd}
-              className="grid size-11 place-items-center rounded-full bg-brand-600 text-2xl leading-none text-white hover:bg-brand-700 active:scale-95"
-            >
-              +
-            </button>
-          ) : (
-            <div className="flex items-center gap-1 rounded-full bg-brand-50 p-1">
-              <button
-                type="button"
-                aria-label={t('menu.remove', { name })}
-                onClick={() => onChange(quantity - 1)}
-                className="grid size-9 place-items-center rounded-full bg-white text-xl leading-none text-brand-700 hover:bg-brand-100"
-              >
-                −
-              </button>
-              <span className="min-w-6 text-center font-bold text-brand-800" data-testid="qty">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                aria-label={t('menu.add', { name })}
-                onClick={() => onChange(quantity + 1)}
-                className="grid size-9 place-items-center rounded-full bg-brand-600 text-xl leading-none text-white hover:bg-brand-700"
-              >
-                +
-              </button>
-            </div>
-          )}
+        <div className="mt-auto flex items-center justify-end pt-2">
+          <QtyStepper name={name} quantity={quantity} onChange={(qty) => (quantity === 0 ? onAdd() : onChange(qty))} />
         </div>
       </div>
     </li>

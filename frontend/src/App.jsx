@@ -13,9 +13,11 @@ import { useLang } from './i18n/LanguageContext.jsx';
 function NotFound() {
   const { t } = useLang();
   return (
-    <div className="grid min-h-screen place-items-center bg-stone-50 px-4 text-center text-stone-900">
+    <div className="grid min-h-screen place-items-center bg-paper px-4 text-center text-stone-950">
       <div>
-        <h1 className="mb-4 text-2xl font-bold">{t('notFound.title')}</h1>
+        <p className="font-display text-8xl font-extrabold italic text-brand-600">404</p>
+        <div className="rule-diamond mx-auto my-5 w-40" />
+        <h1 className="mb-6 font-display text-2xl font-bold">{t('notFound.title')}</h1>
         <Link className={buttonClasses('primary', 'md')} to="/">
           {t('notFound.home')}
         </Link>

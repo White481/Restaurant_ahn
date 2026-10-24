@@ -22,11 +22,10 @@ export default function CancelModal({ order, onClose, onConfirm }) {
       }
     >
       {order && (
-        <p>
-          {t('cancel.summary', { table: order.table_id, n: order.items.length, total: formatBaht(order.total_price) })}
-          <br />
-          {t('cancel.warn')}
-        </p>
+        <div className="flex flex-col gap-3">
+          <p>{t('cancel.summary', { table: order.table_id, n: order.items.length, total: formatBaht(order.total_price) })}</p>
+          <p className="rounded-lg bg-chili-100 px-3 py-2 text-sm font-medium text-chili-700 dark:bg-chili-900 dark:text-chili-300">{t('cancel.warn')}</p>
+        </div>
       )}
     </Modal>
   );

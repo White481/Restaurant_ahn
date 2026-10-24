@@ -1,12 +1,12 @@
 const db = require('../config/db');
 
-// สรุปยอดรายได้วันนี้ (เฉพาะออเดอร์ที่ completed แล้ว)
+// สรุปยอดรายได้วันนี้ (เฉพาะออเดอร์ที่ completed แล้ว นับตามวันที่รับเงิน)
 exports.getTodayRevenue = async () => {
     const [rows] = await db.query(
         `SELECT COALESCE(SUM(total_price), 0) AS revenue
          FROM orders
          WHERE status = 'completed'
-           AND DATE(order_date) = CURDATE()`
+           AND DATE(paid_at) = CURDATE()`
     );
     return Number(rows[0].revenue) || 0;
 };
@@ -27,13 +27,13 @@ exports.getTodayOrderCountByStatus = async () => {
     return result;
 };
 
-// ยอดเฉลี่ยต่อออเดอร์วันนี้ (เฉพาะ completed)
+// ยอดเฉลี่ยต่อออเดอร์วันนี้ (เฉพาะ completed นับตามวันที่รับเงิน ให้ตรงกับยอดรายได้)
 exports.getTodayAverageOrderValue = async () => {
     const [rows] = await db.query(
         `SELECT COALESCE(AVG(total_price), 0) AS avg_value
          FROM orders
          WHERE status = 'completed'
-           AND DATE(order_date) = CURDATE()`
+           AND DATE(paid_at) = CURDATE()`
     );
     return Number(rows[0].avg_value) || 0;
 };

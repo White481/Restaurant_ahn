@@ -1,3 +1,4 @@
+import Icon from '../../ui/Icon.jsx';
 import { useLang } from '../../i18n/LanguageContext.jsx';
 
 export default function SoundToggle({ enabled, onToggle }) {
@@ -7,12 +8,13 @@ export default function SoundToggle({ enabled, onToggle }) {
       type="button"
       onClick={onToggle}
       aria-pressed={enabled}
-      className={`min-h-9 rounded-lg px-3 text-sm font-medium ${
+      className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold transition ${
         enabled
-          ? 'bg-brand-100 text-brand-800 dark:bg-brand-900/50 dark:text-brand-200'
-          : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+          ? 'bg-sage-100 text-sage-700 dark:bg-sage-900 dark:text-sage-300'
+          : 'border border-dashed border-stone-400 text-stone-600 hover:border-brand-500 hover:text-brand-700 dark:border-stone-600 dark:text-stone-300'
       }`}
     >
+      <Icon name={enabled ? 'bell' : 'bellOff'} className="size-4" />
       {enabled ? t('sound.on') : t('sound.off')}
     </button>
   );

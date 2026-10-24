@@ -88,11 +88,20 @@ exports.getAllOrders = async ({ status } = {}) => {
 };
 
 // คืน true ถ้าพบออเดอร์และอัปเดตแล้ว, false ถ้าไม่พบออเดอร์นี้
+// ออเดอร์ที่ปิดแล้ว (completed/cancelled) เปลี่ยนสถานะไม่ได้ กันยอดรายได้เพี้ยน
 exports.updateStatus = async (id, status) => {
-    const [rows] = await db.execute('SELECT order_id FROM orders WHERE order_id = ?', [id]);
+    const [rows] = await db.execute('SELECT order_id, status FROM orders WHERE order_id = ?', [id]);
     if (rows.length === 0) return false;
+    if (['completed', 'cancelled'].includes(rows[0].status)) {
+        throw new HttpError(409, `Order is already ${rows[0].status}`);
+    }
 
-    await db.execute('UPDATE orders SET status = ? WHERE order_id = ?', [status, id]);
+    // เช็คสถานะซ้ำใน WHERE กันกรณีมีคนกดจ่าย/ยกเลิกแทรกเข้ามาระหว่าง SELECT กับ UPDATE
+    const [result] = await db.execute(
+        `UPDATE orders SET status = ? WHERE order_id = ? AND status NOT IN ('completed', 'cancelled')`,
+        [status, id]
+    );
+    if (result.affectedRows === 0) throw new HttpError(409, 'Order is already closed');
     return true;
 };
 

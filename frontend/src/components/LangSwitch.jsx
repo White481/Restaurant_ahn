@@ -1,6 +1,6 @@
 import { useLang } from '../i18n/LanguageContext.jsx';
 
-// สวิตช์ภาษา ไทย | EN (จำค่าไว้ในเครื่อง) อยู่ข้างสวิตช์ ลูกค้า|พนักงาน มุมขวาบน
+// สวิตช์ภาษา ไทย | EN (จำค่าไว้ในเครื่อง): ตัวหนังสือล้วนคั่นด้วยเส้น แบบหัวกระดาษเมนู
 export default function LangSwitch() {
   const { lang, setLang, t } = useLang();
 
@@ -11,10 +11,10 @@ export default function LangSwitch() {
       lang={value === 'th' ? 'th' : 'en'}
       aria-pressed={lang === value}
       onClick={() => setLang(value)}
-      className={`min-h-8 rounded-full px-3 text-xs font-bold transition ${
+      className={`min-h-8 px-1.5 text-xs font-bold tracking-wider transition ${
         lang === value
-          ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-100 dark:text-stone-900'
-          : 'text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white'
+          ? 'text-brand-600 underline decoration-2 underline-offset-[6px] dark:text-brand-400'
+          : 'text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-50'
       }`}
     >
       {t(`lang.${value}`)}
@@ -22,8 +22,9 @@ export default function LangSwitch() {
   );
 
   return (
-    <div role="group" aria-label={t('lang.aria')} className="inline-flex shrink-0 rounded-full bg-stone-200 p-0.5 dark:bg-stone-800">
+    <div role="group" aria-label={t('lang.aria')} className="inline-flex shrink-0 items-center gap-1">
       {item('th')}
+      <span aria-hidden="true" className="h-3 w-px bg-stone-300 dark:bg-stone-700" />
       {item('en')}
     </div>
   );

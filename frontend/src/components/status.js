@@ -31,7 +31,27 @@ export const LATE_MINUTES = 20;
 // role ที่รับชำระเงินได้ (ต้องตรงกับ requireAuth ของ POST /api/orders/:id/pay ใน backend)
 export const PAYMENT_ROLES = ['admin', 'cashier', 'waiter'];
 
-export const ORDER_TYPE_ICON = { dine_in: '🍽️', take_away: '🥡' };
+// ไอคอน (ชื่อใน ui/Icon.jsx) ของประเภทออเดอร์
+export const ORDER_TYPE_ICON = { dine_in: 'table', take_away: 'takeaway' };
+
+// สีประจำสถานะ (โทนดินจาก design tokens ใน styles.css) ใช้ชุดเดียวทั้งแอป แสดงคู่กับข้อความเสมอ ไม่ใช้สีอย่างเดียว
+export const STATUS_TONE = {
+  placed: 'bg-peach-100 text-peach-700 dark:bg-peach-900 dark:text-peach-300',
+  preparing: 'bg-turmeric-100 text-turmeric-700 dark:bg-turmeric-900 dark:text-turmeric-300',
+  ready: 'bg-sage-100 text-sage-700 dark:bg-sage-900 dark:text-sage-300',
+  served: 'bg-tea-100 text-tea-700 dark:bg-tea-900 dark:text-tea-300',
+  completed: 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-200',
+  cancelled: 'bg-chili-100 text-chili-700 dark:bg-chili-900 dark:text-chili-300'
+};
+
+export const STATUS_DOT = {
+  placed: 'bg-peach-500',
+  preparing: 'bg-turmeric-500',
+  ready: 'bg-sage-500',
+  served: 'bg-tea-500',
+  completed: 'bg-stone-500',
+  cancelled: 'bg-chili-500'
+};
 
 export const formatBaht = (value) =>
   `฿${Number(value).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;

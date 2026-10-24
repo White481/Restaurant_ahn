@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import EmptyState from '../../ui/EmptyState.jsx';
+import Icon from '../../ui/Icon.jsx';
 import { buttonClasses } from '../../ui/Button.jsx';
 import { formatBaht } from '../../components/status.js';
 import { localizedName } from '../../i18n/index.js';
 import { useLang } from '../../i18n/LanguageContext.jsx';
 import { useCart } from '../CartContext.jsx';
+import QtyStepper from './QtyStepper.jsx';
 
 // ตะกร้าที่เลื่อนขึ้นจากด้านล่าง (มือถือ) หรือเลื่อนจากด้านขวา (แท็บเล็ต/จอใหญ่) ดู/แก้จำนวนได้โดยไม่ต้องเปลี่ยนหน้า
 export default function CartDrawer({ open, onClose }) {
@@ -34,7 +36,7 @@ export default function CartDrawer({ open, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50"
+      className="fixed inset-0 z-50 bg-espresso/55 backdrop-blur-[2px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -45,59 +47,53 @@ export default function CartDrawer({ open, onClose }) {
         aria-modal="true"
         aria-label={t('cart.dialog')}
         tabIndex={-1}
-        className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-96 md:rounded-none"
+        className="rise-in absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-2xl bg-stone-50 text-stone-950 shadow-xl outline-none md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[26rem] md:rounded-none"
       >
-        <header className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-          <h2 className="text-lg font-bold">{t('cart.titleCount', { n: totalQty })}</h2>
-          <button type="button" onClick={onClose} aria-label={t('cart.close')} className="grid size-10 place-items-center rounded-full text-xl text-stone-500 hover:bg-stone-100">
-            ✕
+        <header className="flex items-center justify-between px-5 pb-3 pt-5">
+          <div>
+            <p className="eyebrow">{t('cart.dialog')}</p>
+            <h2 className="font-display text-2xl font-bold">{t('cart.titleCount', { n: totalQty })}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('cart.close')}
+            className="grid size-10 place-items-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-900"
+          >
+            <Icon name="x" className="size-5" />
           </button>
         </header>
+        <div className="rule-diamond mx-5" />
 
         {items.length === 0 ? (
-          <EmptyState icon="🛒" title={t('cart.empty')} hint={t('cart.emptyHint')} />
+          <EmptyState icon="bag" title={t('cart.empty')} hint={t('cart.emptyHint')} />
         ) : (
           <>
-            <ul className="flex-1 divide-y divide-stone-100 overflow-y-auto px-4">
+            <ul className="flex-1 overflow-y-auto px-5">
               {items.map((item) => {
                 const name = localizedName(item, lang);
                 return (
-                <li key={item.menu_item_id} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{name}</p>
-                    <p className="text-sm text-stone-500">{formatBaht(item.price * item.quantity)}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 p-1">
-                    <button
-                      type="button"
-                      aria-label={t('cart.dec', { name })}
-                      onClick={() => setQuantity(item.menu_item_id, item.quantity - 1)}
-                      className="grid size-9 place-items-center rounded-full bg-white text-xl leading-none text-brand-700"
-                    >
-                      −
-                    </button>
-                    <span className="min-w-6 text-center font-bold text-brand-800">{item.quantity}</span>
-                    <button
-                      type="button"
-                      aria-label={t('cart.inc', { name })}
-                      onClick={() => setQuantity(item.menu_item_id, item.quantity + 1)}
-                      className="grid size-9 place-items-center rounded-full bg-brand-600 text-xl leading-none text-white"
-                    >
-                      +
-                    </button>
-                  </div>
-                </li>
+                  <li key={item.menu_item_id} className="flex items-center justify-between gap-3 border-b border-dashed border-stone-300 py-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{name}</p>
+                      <p className="text-sm tabular-nums text-stone-500">
+                        {formatBaht(item.price)} × {item.quantity}
+                      </p>
+                    </div>
+                    <QtyStepper name={name} quantity={item.quantity} onChange={(qty) => setQuantity(item.menu_item_id, qty)} size="sm" />
+                  </li>
                 );
               })}
             </ul>
 
-            <footer className="border-t border-stone-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <div className="mb-3 flex items-center justify-between text-lg">
-                <span>{t('common.totalAll')}</span>
-                <strong className="text-brand-700">{formatBaht(totalPrice)}</strong>
+            <footer className="border-t border-stone-300 bg-stone-100 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <div className="mb-4 flex items-baseline justify-between">
+                <span className="eyebrow">{t('common.totalAll')}</span>
+                <strong className="font-display text-3xl tabular-nums text-brand-600">{formatBaht(totalPrice)}</strong>
               </div>
               <Link to="/cart" className={`${buttonClasses('primary', 'lg')} w-full`}>
                 {t('cart.checkout')}
+                <Icon name="arrow" className="size-4" />
               </Link>
             </footer>
           </>

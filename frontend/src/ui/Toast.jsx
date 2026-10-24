@@ -3,9 +3,10 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 // ข้อความแจ้งเตือนลอยชั่วคราว (แทนข้อความแดงในหน้า): toast.error('...') / toast.success('...')
 const ToastContext = createContext(null);
 
+// พื้นเข้มเหมือนแถบตะกร้า แยกชนิดด้วยแถบสีด้านซ้าย
 const STYLE = {
-  success: 'bg-green-700 text-white',
-  error: 'bg-red-700 text-white'
+  success: 'border-sage-500',
+  error: 'border-chili-500'
 };
 
 export function ToastProvider({ children }) {
@@ -33,7 +34,11 @@ export function ToastProvider({ children }) {
         className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4 md:bottom-6"
       >
         {toasts.map((t) => (
-          <div key={t.id} role="status" className={`pointer-events-auto max-w-md rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${STYLE[t.type]}`}>
+          <div
+            key={t.id}
+            role="status"
+            className={`rise-in pointer-events-auto max-w-md rounded-lg border-l-4 bg-espresso px-4 py-3 text-sm font-medium text-stone-50 shadow-[0_12px_30px_-12px_rgb(42_33_27/0.6)] ${STYLE[t.type]}`}
+          >
             {t.message}
           </div>
         ))}

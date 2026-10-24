@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import Button from '../../ui/Button.jsx';
 import Modal from '../../ui/Modal.jsx';
 import Receipt from '../../components/Receipt.jsx';
+import Icon from '../../ui/Icon.jsx';
 import { useLang } from '../../i18n/LanguageContext.jsx';
 
 const KEY = 'oms_receipt_lang';
@@ -37,14 +38,17 @@ export default function ReceiptDialog({ order, onClose }) {
             <Button variant="secondary" onClick={onClose}>
               {t('common.close')}
             </Button>
-            <Button onClick={() => window.print()}>🖨️ {t('receiptDlg.print')}</Button>
+            <Button onClick={() => window.print()}>
+              <Icon name="print" className="size-4" />
+              {t('receiptDlg.print')}
+            </Button>
           </>
         }
       >
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm">{t('receiptDlg.lang')}</span>
-            <div role="group" aria-label={t('receiptDlg.lang')} className="inline-flex rounded-full bg-stone-200 p-1 dark:bg-stone-800">
+            <span className="eyebrow">{t('receiptDlg.lang')}</span>
+            <div role="group" aria-label={t('receiptDlg.lang')} className="inline-flex overflow-hidden rounded-lg border border-stone-300 dark:border-stone-700">
               {OPTIONS.map((option) => (
                 <button
                   key={option.value}
@@ -52,8 +56,10 @@ export default function ReceiptDialog({ order, onClose }) {
                   lang={option.value}
                   aria-pressed={lang === option.value}
                   onClick={() => choose(option.value)}
-                  className={`min-h-9 rounded-full px-4 text-sm font-semibold ${
-                    lang === option.value ? 'bg-white text-stone-900 shadow-sm dark:bg-stone-100' : 'text-stone-600 dark:text-stone-300'
+                  className={`min-h-9 px-4 text-sm font-bold ${
+                    lang === option.value
+                      ? 'bg-espresso text-stone-50 dark:bg-stone-100 dark:text-stone-950'
+                      : 'text-stone-600 hover:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-800'
                   }`}
                 >
                   {option.label}
@@ -61,8 +67,8 @@ export default function ReceiptDialog({ order, onClose }) {
               ))}
             </div>
           </div>
-          <p className="text-xs">{t('receiptDlg.hint')}</p>
-          <div className="flex justify-center rounded-xl bg-stone-200 p-4 dark:bg-stone-800">
+          <p className="text-xs text-stone-500 dark:text-stone-400">{t('receiptDlg.hint')}</p>
+          <div className="hatch flex justify-center rounded-xl p-5 dark:bg-stone-950">
             <Receipt order={order} lang={lang} />
           </div>
         </div>

@@ -5,10 +5,10 @@ exports.getAllMenus = async () => {
     return rows;
 };
 
-exports.createMenuItem = async ({ item_name, item_name_en, category, price }) => {
+exports.createMenuItem = async ({ item_name, item_name_en, category, price, image_url }) => {
     const [result] = await db.execute(
-        'INSERT INTO menu_item (item_name, item_name_en, category, price) VALUES (?, ?, ?, ?)',
-        [item_name, item_name_en || null, category || null, price]
+        'INSERT INTO menu_item (item_name, item_name_en, category, price, image_url) VALUES (?, ?, ?, ?, ?)',
+        [item_name, item_name_en || null, category || null, price, image_url || null]
     );
     return result.insertId;
 };

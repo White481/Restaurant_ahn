@@ -12,7 +12,7 @@ export default function OrderBoard({ orders, now, freshIds, pendingIds, canPay, 
   }, [orders]);
 
   return (
-    <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid items-start gap-x-5 gap-y-8 md:grid-cols-2 xl:grid-cols-4">
       {BOARD_STATUSES.map((status) => (
         <OrderColumn
           key={status}
