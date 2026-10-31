@@ -13,6 +13,13 @@ const SALES_SUMMARY_FALLBACK = `
       (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_item oi JOIN orders o ON o.order_id = oi.order_id
         WHERE o.status <> 'cancelled' AND DATE(o.order_date) = ?) AS items_sold`;
 
+let warnedFallback = false;
+function warnFallbackOnce(error) {
+    if (warnedFallback) return;
+    warnedFallback = true;
+    console.warn(`sp_sales_summary unavailable (${error.code || error.message}), using fallback query`);
+}
+
 // สรุปยอดขายของวันที่ date (YYYY-MM-DD) ผ่าน stored procedure
 // คืน { ...ตัวเลข, source: 'procedure' | 'query' } (source บอกว่าได้ผลมาจาก procedure จริงหรือคำสั่งสำรอง)
 exports.getSalesSummary = async (date) => {
@@ -23,7 +30,9 @@ exports.getSalesSummary = async (date) => {
         const [results] = await db.query('CALL sp_sales_summary(?)', [date]);
         row = results[0][0];
     } catch (error) {
-        if (!['ER_SP_DOES_NOT_EXIST', 'ER_PARSE_ERROR', 'ER_NOT_SUPPORTED_YET'].includes(error.code)) throw error;
+        // ฐานข้อมูลที่ไม่มี procedure (MySQL ที่ยังไม่รัน procedures.sql) หรือไม่รองรับ CALL (TiDB) ตอบ error ต่างกันไป
+        // จึงใช้คำสั่งสำรองทุกกรณี ถ้าคำสั่งสำรองพังด้วย error นั้นจะถูกส่งต่อตามปกติ
+        warnFallbackOnce(error);
         const [rows] = await db.query(SALES_SUMMARY_FALLBACK, Array(7).fill(date));
         row = rows[0];
         source = 'query';
