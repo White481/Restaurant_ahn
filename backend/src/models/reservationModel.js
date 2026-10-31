@@ -17,13 +17,11 @@ const NO_OVERLAP = `NOT EXISTS (
 
 // ส่งวันที่/เวลาเป็นข้อความ (DATE ของ mysql2 เป็น Date object ซึ่งแปลงเป็น JSON แล้ววันอาจเลื่อนตาม timezone)
 const SELECT_RESERVATION = `
-    SELECT r.reservation_id, r.customer_id, r.table_id, r.party_size, r.status,
+    SELECT r.reservation_id, r.customer_name, r.phone, r.table_id, r.party_size, r.status,
            DATE_FORMAT(r.reservation_date, '%Y-%m-%d') AS reservation_date,
            TIME_FORMAT(r.reservation_time, '%H:%i') AS reservation_time,
-           CONCAT_WS(' ', c.first_name, c.last_name) AS customer_name, c.phone,
            t.table_number, t.capacity
     FROM reservation r
-    JOIN customer c ON c.customer_id = r.customer_id
     JOIN dining_table t ON t.table_id = r.table_id`;
 
 // หาโต๊ะที่เล็กที่สุดที่นั่งพอและว่างในช่วงเวลานั้น (ล็อกแถวโต๊ะไว้กันสองคนจองโต๊ะเดียวกันพร้อมกัน)
@@ -52,32 +50,19 @@ async function assertTableFree(conn, { tableId, date, time, partySize, excludeId
     if (!rows[0].is_free) throw new HttpError(409, `Table ${tableId} is already reserved around that time`);
 }
 
-// ลูกค้าจองโต๊ะ: หา/สร้างลูกค้าจากเบอร์โทร -> หาโต๊ะว่าง -> บันทึกการจอง (ทั้งหมดใน transaction เดียว)
-exports.createReservation = async ({ firstName, lastName, phone, date, time, partySize }) => {
+// ลูกค้าจองโต๊ะ: หาโต๊ะว่าง -> บันทึกการจองพร้อมชื่อและเบอร์ผู้จอง (ทั้งหมดใน transaction เดียว)
+exports.createReservation = async ({ customerName, phone, date, time, partySize }) => {
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
-
-        const [found] = await conn.execute('SELECT customer_id FROM customer WHERE phone = ? ORDER BY customer_id LIMIT 1', [phone]);
-        let customerId;
-        if (found.length > 0) {
-            customerId = found[0].customer_id;
-            await conn.execute('UPDATE customer SET first_name = ?, last_name = ? WHERE customer_id = ?', [firstName, lastName, customerId]);
-        } else {
-            const [inserted] = await conn.execute(
-                'INSERT INTO customer (first_name, last_name, phone) VALUES (?, ?, ?)',
-                [firstName, lastName, phone]
-            );
-            customerId = inserted.insertId;
-        }
 
         const table = await findFreeTable(conn, { date, time, partySize });
         if (!table) throw new HttpError(409, 'No table is available for that date and time');
 
         const [result] = await conn.execute(
-            `INSERT INTO reservation (customer_id, table_id, reservation_date, reservation_time, party_size)
-             VALUES (?, ?, ?, ?, ?)`,
-            [customerId, table.table_id, date, time, partySize]
+            `INSERT INTO reservation (customer_name, phone, table_id, reservation_date, reservation_time, party_size)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [customerName, phone, table.table_id, date, time, partySize]
         );
 
         await conn.commit();

@@ -66,11 +66,9 @@ exports.createReservation = asyncHandler(async (req, res) => {
     }
     const slot = parseSlot(req.body);
 
-    // ชื่อคำแรก = first_name ที่เหลือ = last_name (ตาราง customer แยกสองช่อง ช่องละ 50 ตัวอักษร)
-    const [first, ...rest] = name.trim().split(/\s+/);
+    // เก็บชื่อเต็มในช่องเดียว (reservation.customer_name สูงสุด 100 ตัวอักษร ตรวจไว้ด้านบนแล้ว)
     const result = await reservationModel.createReservation({
-        firstName: first.slice(0, 50),
-        lastName: rest.join(' ').slice(0, 50) || null,
+        customerName: name.trim().replace(/\s+/g, ' '),
         phone: phone.trim().replace(/[\s-]/g, ''),
         ...slot
     });

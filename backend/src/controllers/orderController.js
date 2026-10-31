@@ -9,7 +9,7 @@ function toPositiveInt(value) {
 }
 
 exports.createNewOrder = asyncHandler(async (req, res) => {
-    const { table_id, order_type, items, special_request, payment_method, session_id, customer_id } = req.body || {};
+    const { table_id, order_type, items, special_request, payment_method } = req.body || {};
 
     const tableId = toPositiveInt(table_id);
     if (tableId === null) throw new HttpError(400, 'table_id must be a positive integer');
@@ -46,10 +46,8 @@ exports.createNewOrder = asyncHandler(async (req, res) => {
         order_type,
         special_request: special_request || null,
         payment_method: payment_method || null,
-        session_id: session_id ? toPositiveInt(session_id) : null,
-        customer_id: customer_id ? toPositiveInt(customer_id) : null,
-        // employee_id มาจาก token เท่านั้น (ถ้าพนักงาน login แล้วสั่งแทนลูกค้า) ไม่รับจาก body
-        employee_id: req.user ? req.user.employee_id : null
+        // staff_id มาจาก token เท่านั้น (ถ้าพนักงาน login แล้วสั่งแทนลูกค้า) ไม่รับจาก body
+        staff_id: req.user ? req.user.staff_id : null
     };
 
     const result = await orderModel.createOrder(orderData, cleanItems);

@@ -15,7 +15,7 @@
 
 | # | ทำอะไร | ผลที่ต้องได้ |
 |---|---|---|
-| 1.1 | เปิด [`docs/er-diagram.png`](er-diagram.png) | 11 entities, 12 relationships, PK/FK ครบ · ตาราง `customer` และ `reservation` ถูกใช้จริงในระบบจองโต๊ะ |
+| 1.1 | เปิด [`docs/er-diagram.png`](er-diagram.png) | 8 entities, 8 relationships, PK/FK ครบ · ตาราง `customer` และ `reservation` ถูกใช้จริงในระบบจองโต๊ะ |
 | 1.2 | เปิด `database/schema.sql` ชี้ `PRIMARY KEY`, `FOREIGN KEY ... REFERENCES`, composite PK ของ `menu_item_ingredient` | ตรงกับ ER ทุกตาราง |
 | 1.3 | รัน `SHOW TABLES;` และ `SHOW CREATE TABLE order_item;` | เห็น FK `fk_orderitem_order`, `fk_orderitem_menuitem` |
 | 1.4 | อธิบายการเชื่อม DB กับแอป: `backend/.env` → `src/config/db.js` (connection pool) → `models/*.js` (SQL) → `controllers/` → `routes/` → `app.js` | — |

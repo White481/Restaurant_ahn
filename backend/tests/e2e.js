@@ -24,7 +24,6 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
   const [[{ maxOrder }]] = await db.query('SELECT COALESCE(MAX(order_id),0) maxOrder FROM orders');
   const [[{ maxMenu }]] = await db.query('SELECT COALESCE(MAX(menu_item_id),0) maxMenu FROM menu_item');
   const [[{ maxResv }]] = await db.query('SELECT COALESCE(MAX(reservation_id),0) maxResv FROM reservation');
-  const [[{ maxCustomer }]] = await db.query('SELECT COALESCE(MAX(customer_id),0) maxCustomer FROM customer');
   const server = app.listen(3101);
   const B = 'http://localhost:3101/api';
   const call = async (method, url, body, token) => {
@@ -123,10 +122,11 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('party of 6 gets the 6-seat table', big1.status === 201 && big1.data.table_number === 'T5');
     check('no table left for another 6 -> 409', (await call('POST', '/reservations', booking({ party_size: 6, phone: '0899999996' }))).status === 409);
     check('2 hours later the 6-seat table is free', (await call('POST', '/reservations', booking({ party_size: 6, time: '20:00', phone: '0899999996' }))).status === 201);
-    const [[{ n: custCount }]] = await db.query("SELECT COUNT(*) n FROM customer WHERE phone = '0899999999'");
-    await call('POST', '/reservations', booking({ time: '12:00' }));
-    const [[{ n: custCount2 }]] = await db.query("SELECT COUNT(*) n FROM customer WHERE phone = '0899999999'");
-    check('same phone reuses customer row', custCount === 1 && custCount2 === 1);
+    const [[saved]] = await db.query('SELECT customer_name, phone FROM reservation WHERE reservation_id = ?', [r1.data.reservation_id]);
+    check('name + phone stored on the reservation', saved && saved.customer_name === 'ทดสอบ ระบบจอง' && saved.phone === '0899999999', JSON.stringify(saved));
+    const listed = (await call('GET', `/reservations?date=${tomorrow}`, null, tok.waiter)).data || [];
+    const row = listed.find((r) => r.reservation_id === r1.data.reservation_id);
+    check('staff list shows customer_name + phone', row && row.customer_name === 'ทดสอบ ระบบจอง' && row.phone === '0899999999', JSON.stringify(row));
     check('past date -> 400', (await call('POST', '/reservations', booking({ date: shop(-1) }))).status === 400);
     check('outside hours -> 400', (await call('POST', '/reservations', booking({ time: '08:00' }))).status === 400);
     check('party 0 -> 400', (await call('POST', '/reservations', booking({ party_size: 0 }))).status === 400);
@@ -164,7 +164,6 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     await db.query('DELETE FROM orders WHERE order_id > ?', [maxOrder]);
     await db.query('DELETE FROM menu_item WHERE menu_item_id > ?', [maxMenu]);
     await db.query('DELETE FROM reservation WHERE reservation_id > ?', [maxResv]);
-    await db.query('DELETE FROM customer WHERE customer_id > ?', [maxCustomer]);
     for (const r of stockBefore) await db.query('UPDATE ingredient SET quantity_in_stock=? WHERE ingredient_id=?', [r.quantity_in_stock, r.ingredient_id]);
     for (const r of tablesBefore) await db.query('UPDATE dining_table SET status=? WHERE table_id=?', [r.status, r.table_id]);
     await db.query('UPDATE menu_item SET is_active = 1 WHERE menu_item_id = 1');

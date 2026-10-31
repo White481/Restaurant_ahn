@@ -1,6 +1,6 @@
 -- =====================================================================
 -- Restaurant Order Management System - Physical Schema (MySQL 8+)
--- Group 10
+-- Group 10 · 8 tables
 -- Source: docs/ ER Diagram + Database Design (see docs/er-diagram.png)
 -- =====================================================================
 
@@ -10,45 +10,26 @@ USE restaurant_oms;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ---------------------------------------------------------------------
--- customer
--- ---------------------------------------------------------------------
+-- ตารางเก่าก่อนลดเหลือ 8 ตาราง (ลบทิ้งถ้ายังค้างอยู่)
+DROP TABLE IF EXISTS table_session;
+DROP TABLE IF EXISTS sys_user;
+DROP TABLE IF EXISTS employee;
 DROP TABLE IF EXISTS customer;
-CREATE TABLE customer (
-  customer_id   INT AUTO_INCREMENT PRIMARY KEY,
-  first_name    VARCHAR(50),
-  last_name     VARCHAR(50),
-  phone         VARCHAR(15),
-  address       VARCHAR(255)
-) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- employee
+-- staff  (พนักงาน + บัญชี login รวมเป็นตารางเดียว: พนักงานทุกคนต้อง login เข้าระบบ)
 -- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS employee;
-CREATE TABLE employee (
-  employee_id   INT AUTO_INCREMENT PRIMARY KEY,
+DROP TABLE IF EXISTS staff;
+CREATE TABLE staff (
+  staff_id      INT AUTO_INCREMENT PRIMARY KEY,
   first_name    VARCHAR(50),
   last_name     VARCHAR(50),
-  position      VARCHAR(50),
   phone         VARCHAR(15),
   email         VARCHAR(100),
-  hire_date     DATE
-) ENGINE=InnoDB;
-
--- ---------------------------------------------------------------------
--- sys_user  (login account, 1:1 with employee)
--- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS sys_user;
-CREATE TABLE sys_user (
-  user_id       INT AUTO_INCREMENT PRIMARY KEY,
-  employee_id   INT NOT NULL UNIQUE,
+  hire_date     DATE,
   username      VARCHAR(50) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('admin', 'chef', 'waiter', 'cashier') NOT NULL,
-  CONSTRAINT fk_sysuser_employee
-    FOREIGN KEY (employee_id) REFERENCES employee(employee_id)
-    ON DELETE CASCADE ON UPDATE CASCADE
+  password_hash VARCHAR(255) NOT NULL,          -- bcrypt hash
+  role          ENUM('admin', 'chef', 'waiter', 'cashier') NOT NULL
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -64,37 +45,19 @@ CREATE TABLE dining_table (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- table_session  (created when a QR code is scanned at a table)
--- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS table_session;
-CREATE TABLE table_session (
-  session_id    INT AUTO_INCREMENT PRIMARY KEY,
-  table_id      INT NOT NULL,
-  qr_token      VARCHAR(255) NOT NULL UNIQUE,
-  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  expires_at    TIMESTAMP NULL,
-  status        ENUM('active', 'closed', 'expired') NOT NULL DEFAULT 'active',
-  CONSTRAINT fk_session_table
-    FOREIGN KEY (table_id) REFERENCES dining_table(table_id)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
--- ---------------------------------------------------------------------
--- reservation
+-- reservation  (ชื่อ + เบอร์ผู้จองเก็บในการจองเลย: ร้านไม่มีระบบสมาชิกลูกค้า)
 -- ---------------------------------------------------------------------
 DROP TABLE IF EXISTS reservation;
 CREATE TABLE reservation (
   reservation_id    INT AUTO_INCREMENT PRIMARY KEY,
-  customer_id       INT NOT NULL,
+  customer_name     VARCHAR(100) NOT NULL,
+  phone             VARCHAR(15) NOT NULL,
   table_id          INT NOT NULL,
   reservation_date  DATE NOT NULL,
   reservation_time  TIME NOT NULL,
   party_size        INT,
   status            ENUM('pending', 'confirmed', 'cancelled', 'completed')
                       NOT NULL DEFAULT 'pending',
-  CONSTRAINT fk_reservation_customer
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_reservation_table
     FOREIGN KEY (table_id) REFERENCES dining_table(table_id)
     ON DELETE CASCADE ON UPDATE CASCADE
@@ -150,9 +113,7 @@ DROP TABLE IF EXISTS orders;
 CREATE TABLE orders (
   order_id        INT AUTO_INCREMENT PRIMARY KEY,
   table_id        INT NOT NULL,
-  session_id      INT,
-  customer_id     INT,
-  employee_id     INT,
+  staff_id        INT NULL,                   -- พนักงานที่สั่งแทนลูกค้า (ลูกค้าสั่งเอง = NULL)
   order_type      ENUM('dine_in', 'take_away') NOT NULL,
   order_date      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   total_price     DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -166,17 +127,11 @@ CREATE TABLE orders (
   CONSTRAINT fk_orders_table
     FOREIGN KEY (table_id) REFERENCES dining_table(table_id)
     ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT fk_orders_session
-    FOREIGN KEY (session_id) REFERENCES table_session(session_id)
-    ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT fk_orders_customer
-    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
-    ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT fk_orders_employee
-    FOREIGN KEY (employee_id) REFERENCES employee(employee_id)
+  CONSTRAINT fk_orders_staff
+    FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
     ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_orders_paid_by
-    FOREIGN KEY (paid_by) REFERENCES employee(employee_id)
+    FOREIGN KEY (paid_by) REFERENCES staff(staff_id)
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -205,5 +160,6 @@ CREATE INDEX idx_orders_status      ON orders(status);
 CREATE INDEX idx_orders_order_date  ON orders(order_date);
 CREATE INDEX idx_ingredient_stock   ON ingredient(quantity_in_stock);
 CREATE INDEX idx_reservation_date   ON reservation(reservation_date);
+CREATE INDEX idx_reservation_phone  ON reservation(phone);
 
 SET FOREIGN_KEY_CHECKS = 1;

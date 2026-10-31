@@ -8,7 +8,7 @@
 ## Structure
 | Folder | หน้าที่ |
 |---|---|
-| `database/` | `schema.sql` (11 ตาราง), `triggers.sql`, `procedures.sql`, `seed.sql`, `migrations/` |
+| `database/` | `schema.sql` (8 ตาราง), `triggers.sql`, `procedures.sql`, `seed.sql`, `migrations/` |
 | `backend/` | REST API: `routes/` → `controllers/` → `models/` (SQL), `middleware/auth.js` (JWT + role), `config/permissions.js` (สิทธิ์ทั้งหมด) |
 | `frontend/` | `customer/` (สั่งอาหาร, ติดตามออเดอร์, จองโต๊ะ) และ `staff/` (กระดานออเดอร์, การจอง, จัดการเมนู, แดชบอร์ด) |
 | `docs/` | [สรุประบบสำหรับทีม (PDF)](docs/system-overview.pdf), [ER diagram](docs/er-diagram.md), [demo test cases](docs/demo-test-cases.md) |
