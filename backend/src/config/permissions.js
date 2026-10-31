@@ -8,7 +8,17 @@ const PERMISSIONS = {
     viewOrders: ROLES,                          // ดูกระดานออเดอร์
     payOrder: ['admin', 'cashier', 'waiter'],   // รับชำระเงิน + ปิดออเดอร์
     manageMenu: ['admin'],                      // เพิ่ม / แก้ / ลบ / ซ่อนเมนู
-    viewDashboard: ['admin']                    // รายงานยอดขาย + สต็อก
+    viewDashboard: ['admin'],                   // รายงานยอดขาย + สต็อก
+    manageReservations: ['admin', 'waiter'],    // ดู / ยืนยัน / เช็คอิน / ยกเลิก / ย้ายโต๊ะ การจอง
+    deleteReservation: ['admin']                // ลบการจองทิ้งถาวร
+};
+
+// การเปลี่ยนสถานะการจอง: pending = รอยืนยัน, confirmed = ยืนยันแล้ว, completed = ลูกค้ามาถึงแล้ว
+const RESERVATION_TRANSITIONS = {
+    pending: { confirmed: PERMISSIONS.manageReservations, cancelled: PERMISSIONS.manageReservations },
+    confirmed: { completed: PERMISSIONS.manageReservations, cancelled: PERMISSIONS.manageReservations },
+    completed: {},
+    cancelled: {}
 };
 
 // การเปลี่ยนสถานะออเดอร์: { สถานะปัจจุบัน: { สถานะถัดไป: [role ที่ทำได้] } }
@@ -23,15 +33,16 @@ const ORDER_TRANSITIONS = {
 };
 
 // คืน null ถ้าเปลี่ยนได้ หรือ { status, message } ถ้าเปลี่ยนไม่ได้
-function checkTransition(role, from, to) {
-    const allowedRoles = (ORDER_TRANSITIONS[from] || {})[to];
+// table = ORDER_TRANSITIONS (ค่าเริ่มต้น) หรือ RESERVATION_TRANSITIONS
+function checkTransition(role, from, to, table = ORDER_TRANSITIONS, label = 'order') {
+    const allowedRoles = (table[from] || {})[to];
     if (!allowedRoles) {
-        return { status: 409, message: `Cannot change order status from ${from} to ${to}` };
+        return { status: 409, message: `Cannot change ${label} status from ${from} to ${to}` };
     }
     if (!allowedRoles.includes(role)) {
-        return { status: 403, message: `Role ${role} cannot change order status from ${from} to ${to}` };
+        return { status: 403, message: `Role ${role} cannot change ${label} status from ${from} to ${to}` };
     }
     return null;
 }
 
-module.exports = { ROLES, PERMISSIONS, ORDER_TRANSITIONS, checkTransition };
+module.exports = { ROLES, PERMISSIONS, ORDER_TRANSITIONS, RESERVATION_TRANSITIONS, checkTransition };

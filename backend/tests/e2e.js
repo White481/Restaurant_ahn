@@ -3,6 +3,7 @@
  *   - Access control: 4 role + ลูกค้า, ขั้นการเปลี่ยนสถานะ
  *   - Triggers: ตัดสต็อก / คืนสต็อก / โต๊ะ occupied-available / ปฏิเสธเมื่อของไม่พอ
  *   - CRUD เมนู, Stored procedure บน dashboard
+ *   - ระบบจองโต๊ะ: หาโต๊ะอัตโนมัติ, กันจองซ้อน, trigger โต๊ะ reserved, สิทธิ์ของแต่ละ role
  *
  * วิธีใช้ (ในโฟลเดอร์ backend, ต้องรัน schema + triggers + procedures + seed แล้ว):
  *   npm run test:e2e
@@ -22,6 +23,8 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
   const [tablesBefore] = await db.query('SELECT table_id, status FROM dining_table');
   const [[{ maxOrder }]] = await db.query('SELECT COALESCE(MAX(order_id),0) maxOrder FROM orders');
   const [[{ maxMenu }]] = await db.query('SELECT COALESCE(MAX(menu_item_id),0) maxMenu FROM menu_item');
+  const [[{ maxResv }]] = await db.query('SELECT COALESCE(MAX(reservation_id),0) maxResv FROM reservation');
+  const [[{ maxCustomer }]] = await db.query('SELECT COALESCE(MAX(customer_id),0) maxCustomer FROM customer');
   const server = app.listen(3101);
   const B = 'http://localhost:3101/api';
   const call = async (method, url, body, token) => {
@@ -104,12 +107,64 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('SP revenue includes paid order', dash.data.sales.revenue >= 120);
     check('dashboard bad date 400', (await call('GET', '/dashboard?date=2026-13-99', null, tok.admin)).status === 400);
     check('dashboard past date ok', (await call('GET', '/dashboard?date=2020-01-01', null, tok.admin)).data.sales.revenue === 0);
+
+    // ---------- ระบบจองโต๊ะ ----------
+    const shop = (offsetDays) => {
+      const d = new Date(Date.now() + offsetDays * 86400000);
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(d);
+    };
+    const tomorrow = shop(1);
+    const booking = (extra) => ({ name: 'ทดสอบ ระบบจอง', phone: '0899999999', date: tomorrow, time: '18:00', party_size: 2, ...extra });
+    const r1 = await call('POST', '/reservations', booking());
+    check('customer reserves (no login) 201', r1.status === 201 && r1.data.status === 'pending', JSON.stringify(r1.data));
+    const r2 = await call('POST', '/reservations', booking({ phone: '0899999998' }));
+    check('same time gets a different table', r2.status === 201 && r2.data.table_number !== r1.data.table_number, `${r1.data.table_number} / ${r2.data.table_number}`);
+    const big1 = await call('POST', '/reservations', booking({ party_size: 6, phone: '0899999997' }));
+    check('party of 6 gets the 6-seat table', big1.status === 201 && big1.data.table_number === 'T5');
+    check('no table left for another 6 -> 409', (await call('POST', '/reservations', booking({ party_size: 6, phone: '0899999996' }))).status === 409);
+    check('2 hours later the 6-seat table is free', (await call('POST', '/reservations', booking({ party_size: 6, time: '20:00', phone: '0899999996' }))).status === 201);
+    const [[{ n: custCount }]] = await db.query("SELECT COUNT(*) n FROM customer WHERE phone = '0899999999'");
+    await call('POST', '/reservations', booking({ time: '12:00' }));
+    const [[{ n: custCount2 }]] = await db.query("SELECT COUNT(*) n FROM customer WHERE phone = '0899999999'");
+    check('same phone reuses customer row', custCount === 1 && custCount2 === 1);
+    check('past date -> 400', (await call('POST', '/reservations', booking({ date: shop(-1) }))).status === 400);
+    check('outside hours -> 400', (await call('POST', '/reservations', booking({ time: '08:00' }))).status === 400);
+    check('party 0 -> 400', (await call('POST', '/reservations', booking({ party_size: 0 }))).status === 400);
+    check('bad phone -> 400', (await call('POST', '/reservations', booking({ phone: 'abc' }))).status === 400);
+    check('list without login -> 401', (await call('GET', `/reservations?date=${tomorrow}`)).status === 401);
+    check('chef list reservations -> 403', (await call('GET', `/reservations?date=${tomorrow}`, null, tok.chef)).status === 403);
+    const list = await call('GET', `/reservations?date=${tomorrow}`, null, tok.waiter);
+    check('waiter lists reservations', list.status === 200 && list.data.some((r) => r.reservation_id === r1.data.reservation_id));
+    const rid = r1.data.reservation_id;
+    check('pending -> completed (skip) 409', (await call('PATCH', `/reservations/${rid}/status`, { status: 'completed' }, tok.waiter)).status === 409);
+    check('waiter confirms 200', (await call('PATCH', `/reservations/${rid}/status`, { status: 'confirmed' }, tok.waiter)).status === 200);
+    const occupiedTable = list.data.find((r) => r.reservation_id === r2.data.reservation_id).table_id;
+    check('move onto a booked table -> 409', (await call('PUT', `/reservations/${rid}`, { table_id: occupiedTable, date: tomorrow, time: '18:00', party_size: 2 }, tok.waiter)).status === 409);
+    check('move to free time 200', (await call('PUT', `/reservations/${rid}`, { table_id: occupiedTable, date: tomorrow, time: '13:00', party_size: 2 }, tok.waiter)).status === 200);
+    check('waiter delete -> 403', (await call('DELETE', `/reservations/${rid}`, null, tok.waiter)).status === 403);
+    check('admin delete 200', (await call('DELETE', `/reservations/${rid}`, null, tok.admin)).status === 200);
+
+    // trigger กับการจองของวันนี้ (ต้องมีรอบว่างเหลือในวันนี้)
+    const nowTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+    if (nowTime < '20:30') {
+      await db.query("UPDATE dining_table SET status = 'available'");
+      const today = await call('POST', '/reservations', booking({ date: shop(0), time: '20:30', phone: '0899999995' }));
+      const tid = (await db.query('SELECT table_id FROM reservation WHERE reservation_id = ?', [today.data.reservation_id]))[0][0].table_id;
+      await call('PATCH', `/reservations/${today.data.reservation_id}/status`, { status: 'confirmed' }, tok.admin);
+      check('trigger: confirmed today -> table reserved', (await tableStatus(tid)) === 'reserved');
+      await call('PATCH', `/reservations/${today.data.reservation_id}/status`, { status: 'cancelled' }, tok.admin);
+      check('trigger: cancelled -> table available', (await tableStatus(tid)) === 'available');
+    } else {
+      console.log('SKIP  today reservation trigger (after 20:30)');
+    }
   } catch (e) {
     fail++; console.log('ERROR', e);
   } finally {
     // คืนข้อมูลเดิม
     await db.query('DELETE FROM orders WHERE order_id > ?', [maxOrder]);
     await db.query('DELETE FROM menu_item WHERE menu_item_id > ?', [maxMenu]);
+    await db.query('DELETE FROM reservation WHERE reservation_id > ?', [maxResv]);
+    await db.query('DELETE FROM customer WHERE customer_id > ?', [maxCustomer]);
     for (const r of stockBefore) await db.query('UPDATE ingredient SET quantity_in_stock=? WHERE ingredient_id=?', [r.quantity_in_stock, r.ingredient_id]);
     for (const r of tablesBefore) await db.query('UPDATE dining_table SET status=? WHERE table_id=?', [r.status, r.table_id]);
     await db.query('UPDATE menu_item SET is_active = 1 WHERE menu_item_id = 1');

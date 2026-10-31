@@ -68,6 +68,14 @@ export const api = {
   payOrder: (id, body) => request(`/api/orders/${id}/pay`, { method: 'POST', body, auth: true }),
 
   // แดชบอร์ดสำหรับ admin: สรุปยอดรายได้ ออเดอร์ เมนูขายดี สถานะโต๊ะ ฯลฯ
+  // ระบบจองโต๊ะ: ลูกค้าจองได้โดยไม่ login ส่วนที่เหลือเป็นของพนักงาน (admin / waiter, ลบได้เฉพาะ admin)
+  createReservation: (body) => request('/api/reservations', { method: 'POST', body }),
+  getReservations: (date) => request(`/api/reservations?date=${encodeURIComponent(date)}`, { auth: true }),
+  getReservationTables: () => request('/api/reservations/tables', { auth: true }),
+  updateReservationStatus: (id, status) => request(`/api/reservations/${id}/status`, { method: 'PATCH', body: { status }, auth: true }),
+  updateReservation: (id, body) => request(`/api/reservations/${id}`, { method: 'PUT', body, auth: true }),
+  deleteReservation: (id) => request(`/api/reservations/${id}`, { method: 'DELETE', auth: true }),
+
   // date = 'YYYY-MM-DD' (ไม่ใส่ = วันนี้) ยอดขายมาจาก stored procedure sp_sales_summary
   getDashboardStats: (date) => request(`/api/dashboard${date ? `?date=${encodeURIComponent(date)}` : ''}`, { auth: true })
 };

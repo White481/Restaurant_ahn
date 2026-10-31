@@ -4,7 +4,8 @@ import { useEffect, useRef } from 'react';
 // - เรียกทันทีหนึ่งครั้งตอนเริ่ม แล้วรอ intervalMs หลัง "เสร็จ" แต่ละรอบ (ไม่ยิงซ้อนถ้า request ช้า)
 // - หยุดถามเมื่อแท็บถูกซ่อน (ลดภาระ server) และถามทันทีที่กลับมาเปิดแท็บ
 // - enabled=false จะหยุดทั้งหมด (เช่น ออเดอร์จบแล้ว)
-export function usePolling(callback, intervalMs, enabled = true) {
+// - key เปลี่ยน (เช่น วันที่ที่เลือก) = เริ่มนับใหม่และถามทันที ไม่ต้องรอรอบถัดไป
+export function usePolling(callback, intervalMs, enabled = true, key = undefined) {
   const saved = useRef(callback);
   useEffect(() => {
     saved.current = callback; // ใช้ callback ล่าสุดเสมอ โดยไม่ต้องเริ่ม timer ใหม่
@@ -43,5 +44,5 @@ export function usePolling(callback, intervalMs, enabled = true) {
       clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [intervalMs, enabled]);
+  }, [intervalMs, enabled, key]);
 }

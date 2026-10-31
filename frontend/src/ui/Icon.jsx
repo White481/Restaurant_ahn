@@ -23,7 +23,12 @@ const PATHS = {
   alert: 'M12 3l10 18H2L12 3zM12 10v5M12 18h.01',
   clock: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2',
   table: 'M4 9h16M6 9v10M18 9v10M8 5h8l2 4H6l2-4z',
-  takeaway: 'M5 8h14l-1.5 12h-11L5 8zM8 8l1-4h6l1 4'
+  takeaway: 'M5 8h14l-1.5 12h-11L5 8zM8 8l1-4h6l1 4',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  users: 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21v-1a6 6 0 0112 0v1M16 3.5a4 4 0 010 7.5M22 21v-1a6 6 0 00-4-5.6',
+  phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z',
+  chevronLeft: 'M15 6l-6 6 6 6',
+  chevronRight: 'M9 6l6 6-6 6'
 };
 
 export default function Icon({ name, className = 'size-5', strokeWidth = 1.75, title }) {

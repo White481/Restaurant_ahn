@@ -15,7 +15,7 @@
 
 | # | ทำอะไร | ผลที่ต้องได้ |
 |---|---|---|
-| 1.1 | เปิด [`docs/er-diagram.png`](er-diagram.png) | 11 entities, 12 relationships, PK/FK ครบ |
+| 1.1 | เปิด [`docs/er-diagram.png`](er-diagram.png) | 11 entities, 12 relationships, PK/FK ครบ · ตาราง `customer` และ `reservation` ถูกใช้จริงในระบบจองโต๊ะ |
 | 1.2 | เปิด `database/schema.sql` ชี้ `PRIMARY KEY`, `FOREIGN KEY ... REFERENCES`, composite PK ของ `menu_item_ingredient` | ตรงกับ ER ทุกตาราง |
 | 1.3 | รัน `SHOW TABLES;` และ `SHOW CREATE TABLE order_item;` | เห็น FK `fk_orderitem_order`, `fk_orderitem_menuitem` |
 | 1.4 | อธิบายการเชื่อม DB กับแอป: `backend/.env` → `src/config/db.js` (connection pool) → `models/*.js` (SQL) → `controllers/` → `routes/` → `app.js` | — |
@@ -32,6 +32,9 @@
 | 2.5 | **Delete** | กด "ลบ" ที่ "ข้าวไข่เจียว" → ยืนยัน | "ลบเมนูแล้ว" หายจาก DB |
 | 2.6 | **Delete ที่ติด FK** | กด "ลบ" ที่เมนูที่เคยถูกสั่ง เช่น ข้าวผัดกะเพรา | "เคยถูกสั่งแล้ว จึงซ่อนไว้แทนการลบ" (FK `ON DELETE RESTRICT` ปกป้องประวัติออเดอร์) แล้วกด "แสดง" คืน |
 | 2.7 | ออเดอร์: Create / Read / Update | ลูกค้าสั่งอาหาร → ขึ้นบนกระดานพนักงาน → เลื่อนสถานะ | ทำงานครบ |
+| 2.8 | การจอง: **Create** | ลูกค้าเปิด `/reserve` จองวันนี้ 2 คน | ได้เลขที่การจอง + โต๊ะที่ระบบเลือกให้ (สร้าง/ใช้แถว `customer` เดิมจากเบอร์โทร) |
+| 2.9 | การจอง: **Read / Update** | พนักงาน → การจอง → ยืนยัน → ย้าย/แก้ไข เปลี่ยนโต๊ะหรือเวลา | อัปเดตทันที ถ้าย้ายไปโต๊ะที่จองซ้อนเวลา → แจ้ง "already reserved" |
+| 2.10 | การจอง: **Delete** | admin กด ✕ ที่การจอง | ลบถาวร (waiter ไม่เห็นปุ่มนี้) |
 
 ## 3. Access Control & Roles (4)
 เปิด `backend/src/config/permissions.js` ให้ดูตารางสิทธิ์ แล้ว login ทีละ role
@@ -40,8 +43,8 @@
 |---|---|---|---|
 | 3.1 | ลูกค้า | เปิด `/staff` โดยไม่ login | ถูกพาไปหน้า login |
 | 3.2 | chef | ดูกระดาน | เห็นปุ่ม "เริ่มทำ/ทำเสร็จ" เท่านั้น ไม่มีปุ่มยกเลิก/ชำระเงิน ไม่มีเมนู "จัดการเมนู/แดชบอร์ด" |
-| 3.3 | waiter | ดูกระดาน | เห็น "เสิร์ฟแล้ว", "ยกเลิก", "ชำระเงิน" แต่กด "เริ่มทำ" ไม่ได้ |
-| 3.4 | cashier | ดูกระดาน | เห็นแค่ "ชำระเงิน" |
+| 3.3 | waiter | ดูกระดาน + การจอง | เห็น "เสิร์ฟแล้ว", "ยกเลิก", "ชำระเงิน" แต่กด "เริ่มทำ" ไม่ได้ · จัดการการจองได้แต่ลบไม่ได้ |
+| 3.4 | cashier | ดูกระดาน | เห็นแค่ "ชำระเงิน" ไม่มีเมนู "การจอง" |
 | 3.5 | admin | ทุกหน้า | ทำได้ทุกอย่าง |
 | 3.6 | ตรวจที่ backend จริง | `npm run test:e2e` (ข้อ "waiter placed->preparing 403", "chef pay 403", "chef -> dashboard 403") | backend ปฏิเสธแม้จะยิง API ตรงโดยไม่ผ่านหน้าเว็บ |
 
@@ -72,6 +75,8 @@ SELECT table_id, status FROM dining_table;
 
 **Trigger 3: ยกเลิกแล้วคืนสต็อก** — waiter ยกเลิกออเดอร์ → สต็อกกลับเท่าเดิม
 
+**Trigger 4: การจอง → โต๊ะ reserved** — ลูกค้าจองวันนี้ แล้ว waiter กด "ยืนยัน" → `SELECT table_id, status FROM dining_table;` โต๊ะนั้นเป็น `reserved` · กด "ยกเลิก" → กลับเป็น `available` · ถ้าลูกค้ามาแล้วสั่งอาหาร → `occupied`
+
 **Trigger ปฏิเสธ (SIGNAL)** — สั่ง ผัดไทยกุ้งสด × 99 → "Out of stock: not enough ingredients for this item" และไม่มีออเดอร์ค้างใน DB
 
 **Stored procedure**
@@ -83,8 +88,8 @@ CALL sp_sales_summary(CURDATE());
 โค้ดที่เรียก: `backend/src/models/dashboardModel.js` → `db.query('CALL sp_sales_summary(?)', [date])`
 
 ## 6. UI & Navigation (3)
-ลูกค้า: เมนู → ตะกร้า → ยืนยันสั่ง → ติดตามสถานะ (อัปเดตเอง) / พนักงาน: กระดาน → ประวัติ → ใบเสร็จ → เมนู → แดชบอร์ด, สลับภาษา ไทย/EN, โหมดมืด, มือถือ
+ลูกค้า: เมนู → ตะกร้า → ยืนยันสั่ง → ติดตามสถานะ (อัปเดตเอง), จองโต๊ะ / พนักงาน: กระดาน → ประวัติ → ใบเสร็จ → การจอง → เมนู → แดชบอร์ด, สลับภาษา ไทย/EN, โหมดมืด, มือถือ
 
 ## 7. Professionalism (3)
 - อธิบาย flow ของข้อมูล 1 ออเดอร์: หน้าเว็บ → `POST /api/orders` → controller ตรวจข้อมูล → model เปิด transaction → INSERT `orders` + `order_item` (trigger ตัดสต็อก) → COMMIT
-- ปิดท้ายด้วย `npm run test:e2e` ให้เห็น **39 passed, 0 failed**
+- ปิดท้ายด้วย `npm run test:e2e` ให้เห็น **60 passed, 0 failed**

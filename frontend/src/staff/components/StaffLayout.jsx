@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import LangSwitch from '../../components/LangSwitch.jsx';
 import ModeSwitch from '../../components/ModeSwitch.jsx';
 import Icon from '../../ui/Icon.jsx';
+import { RESERVATION_ROLES } from '../../components/status.js';
 import Wordmark from '../../ui/Wordmark.jsx';
 import { useNow } from '../../hooks/useNow.js';
 import { useTheme } from '../../hooks/useTheme.js';
@@ -13,6 +14,7 @@ import ThemeToggle from './ThemeToggle.jsx';
 // รายการเมนูนำทาง: เพิ่มหน้าใหม่ (Stocks / Employees / Reports) ที่นี่เมื่อ backend มี API รองรับ
 const NAV = [
   { to: '/staff', labelKey: 'staff.nav.orders', icon: 'receipt', end: true },
+  { to: '/staff/reservations', labelKey: 'staff.nav.reservations', icon: 'calendar', roles: RESERVATION_ROLES },
   { to: '/staff/menu', labelKey: 'staff.nav.menu', icon: 'list', roles: ['admin'] },
   { to: '/staff/dashboard', labelKey: 'staff.nav.dashboard', icon: 'chart', roles: ['admin'] }
 ];

@@ -59,7 +59,7 @@ export default function DashboardPage() {
     }
   }, [logout, navigate, date]);
 
-  usePolling(refresh, REFRESH_MS);
+  usePolling(refresh, REFRESH_MS, true, date);
 
   const tableTotal = stats ? Object.values(stats.table_stats).reduce((s, n) => s + n, 0) : 0;
   const statusTotal = stats ? ALL_STATUSES.reduce((s, k) => s + (stats.orders_by_status[k] || 0), 0) : 0;

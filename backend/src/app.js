@@ -12,6 +12,7 @@ const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const reservationRoutes = require('./routes/reservationRoutes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/menus', menuRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reservations', reservationRoutes);
 
 app.get('/', (req, res) => {
     res.send('Restaurant API is running...');
