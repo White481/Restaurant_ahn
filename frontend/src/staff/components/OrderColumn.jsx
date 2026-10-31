@@ -3,7 +3,7 @@ import { useLang } from '../../i18n/LanguageContext.jsx';
 import OrderCard from './OrderCard.jsx';
 
 // 1 คอลัมน์ของกระดาน (ออเดอร์ที่อยู่ในสถานะเดียวกัน) เก่าสุดอยู่บน เพราะคือใบที่ต้องรีบทำก่อน
-export default function OrderColumn({ status, orders, now, freshIds, pendingIds, canPay, onAdvance, onCancel }) {
+export default function OrderColumn({ status, orders, now, freshIds, pendingIds, role, onAdvance, onCancel }) {
   const { t } = useLang();
   return (
     <section aria-labelledby={`col-${status}`} data-testid={`column-${status}`} className="flex flex-col gap-3">
@@ -30,7 +30,7 @@ export default function OrderColumn({ status, orders, now, freshIds, pendingIds,
             now={now}
             fresh={freshIds.has(order.order_id)}
             busy={pendingIds.has(order.order_id)}
-            canPay={canPay}
+            role={role}
             onAdvance={onAdvance}
             onCancel={onCancel}
           />

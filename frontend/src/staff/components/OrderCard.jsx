@@ -1,12 +1,12 @@
 import Button from '../../ui/Button.jsx';
 import Icon from '../../ui/Icon.jsx';
 import {
-  CANCELLABLE,
   LATE_MINUTES,
   NEXT_STEP,
   ORDER_TYPE_ICON,
   TIMED_STATUSES,
   WARN_MINUTES,
+  canTransition,
   formatBaht
 } from '../../components/status.js';
 import { formatTime, localizedName } from '../../i18n/index.js';
@@ -29,14 +29,15 @@ const TIMER = {
 
 // ใบออเดอร์ 1 ใบ (หน้าตาแบบใบสั่งในครัว): เลขออเดอร์ตัวใหญ่, ตัวจับเวลาที่รอมา (เหลือง >10 นาที, แดง >20 นาที),
 // รายการอาหาร, โน้ต, ปุ่มขั้นถัดไปปุ่มใหญ่ปุ่มเดียว
-// canPay: ผู้ใช้ role นี้รับชำระเงินได้ไหม (ถ้าไม่ได้ จะไม่แสดงปุ่ม "ชำระเงิน" ในคอลัมน์ "เสิร์ฟแล้ว")
-export default function OrderCard({ order, now, fresh, busy, canPay, onAdvance, onCancel }) {
+// role: แสดงเฉพาะปุ่มที่ role นี้กดได้ (เช่น ครัวเห็นแค่ "เริ่มทำ/ทำเสร็จ", พนักงานเสิร์ฟเห็น "เสิร์ฟแล้ว/ยกเลิก")
+export default function OrderCard({ order, now, fresh, busy, role, onAdvance, onCancel }) {
   const { lang, t } = useLang();
   const orderedAt = new Date(order.order_date);
   const ageMinutes = Math.max(0, Math.floor((now - orderedAt.getTime()) / 60000));
   const urgency = TIMED_STATUSES.includes(order.status) ? (ageMinutes >= LATE_MINUTES ? 'late' : ageMinutes >= WARN_MINUTES ? 'warn' : 'ok') : 'none';
   const nextStatus = NEXT_STEP[order.status];
-  const showNext = nextStatus && (nextStatus !== 'completed' || canPay);
+  const showNext = nextStatus && canTransition(role, order.status, nextStatus);
+  const showCancel = canTransition(role, order.status, 'cancelled');
 
   return (
     <article
@@ -105,7 +106,7 @@ export default function OrderCard({ order, now, fresh, busy, canPay, onAdvance, 
             <Icon name="arrow" className="size-4" />
           </Button>
         )}
-        {CANCELLABLE.includes(order.status) && (
+        {showCancel && (
           <Button variant="danger" size="lg" disabled={busy} onClick={() => onCancel(order)} aria-label={t('orders.cancelAria', { id: order.order_id })}>
             {t('orders.cancelBtn')}
           </Button>

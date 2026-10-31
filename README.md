@@ -1,25 +1,73 @@
-# Restaurant Order Management System (Group 10)
+# All About Food! — Restaurant Order Management System (Group 10)
 
-ระบบจัดการออเดอร์ร้านอาหาร: ลูกค้าสแกน QR ที่โต๊ะเพื่อสั่งอาหาร และพนักงาน/แอดมินจัดการออเดอร์ เมนู สต็อก พนักงาน และรายงาน
+ระบบจัดการออเดอร์ร้านอาหาร: ลูกค้าสแกน QR ที่โต๊ะเพื่อสั่งอาหาร ส่วนพนักงานจัดการออเดอร์ตามหน้าที่ (ครัว / เสิร์ฟ / แคชเชียร์) และแอดมินจัดการเมนูและดูรายงานยอดขาย
+
+- **Frontend:** React + Vite + Tailwind CSS · **Backend:** Node.js + Express · **Database:** MySQL 8
+- Live demo: https://restaurant-ahn-hclv.vercel.app (API: https://restaurant-ahn-1.onrender.com)
 
 ## Structure
 | Folder | หน้าที่ |
 |---|---|
-| `docs/` | เอกสาร proposal, ER diagram, user flows, สไลด์นำเสนอ |
-| `database/` | schema, triggers, seed data, report queries (MySQL) |
-| `backend/` | API + business logic + auth/role |
-| `frontend/` | `customer/` (สั่งอาหาร) และ `staff/` (dashboard ฯลฯ) |
-| `design/` | ลิงก์ Figma / FigJam |
+| `database/` | `schema.sql` (11 ตาราง), `triggers.sql`, `procedures.sql`, `seed.sql`, `migrations/` |
+| `backend/` | REST API: `routes/` → `controllers/` → `models/` (SQL), `middleware/auth.js` (JWT + role), `config/permissions.js` (สิทธิ์ทั้งหมด) |
+| `frontend/` | `customer/` (สั่งอาหาร, ติดตามออเดอร์) และ `staff/` (กระดานออเดอร์, จัดการเมนู, แดชบอร์ด) |
+| `docs/` | [ER diagram](docs/er-diagram.md), [demo test cases](docs/demo-test-cases.md), user flows |
 
-## Getting started
-1. `git clone <repo-url>`
-2. สร้างฐานข้อมูล: รัน `database/schema.sql` -> `triggers.sql` -> `seed.sql`
-3. Backend: copy `backend/.env.example` เป็น `backend/.env` แล้วใส่ค่าจริง
-4. (เติมคำสั่งรันเมื่อเลือก stack แล้ว)
+## Getting started (local)
+1. สร้างฐานข้อมูล (MySQL 8) ตามลำดับ:
+   ```bash
+   mysql -u root -p < database/schema.sql
+   mysql -u root -p < database/triggers.sql
+   mysql -u root -p < database/procedures.sql
+   mysql -u root -p < database/seed.sql
+   ```
+   ฐานข้อมูลเดิมที่สร้างไว้แล้ว: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรัน (เรียงตามเลข)
+2. Backend
+   ```bash
+   cd backend && npm install
+   cp .env.example .env      # ใส่รหัส DB, JWT_SECRET, SEED_PASSWORD
+   npm run seed:users        # สร้างบัญชี admin / chef / waiter / cashier
+   npm run dev               # http://localhost:3000
+   ```
+3. Frontend
+   ```bash
+   cd frontend && npm install && npm run dev   # http://localhost:5173
+   ```
+4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (39 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
+
+## Roles & permissions
+สิทธิ์ทั้งหมดอยู่ที่ [`backend/src/config/permissions.js`](backend/src/config/permissions.js) ที่เดียว backend ตรวจทุก request (JWT) ส่วน frontend ซ่อนปุ่มที่ role นั้นกดไม่ได้
+
+| ทำอะไร | ลูกค้า | chef | waiter | cashier | admin |
+|---|:-:|:-:|:-:|:-:|:-:|
+| ดูเมนู / สั่งอาหาร / ติดตามออเดอร์ตัวเอง | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ดูกระดานออเดอร์ | | ✓ | ✓ | ✓ | ✓ |
+| `placed → preparing → ready` (ครัว) | | ✓ | | | ✓ |
+| `ready → served` (เสิร์ฟ) | | | ✓ | | ✓ |
+| ยกเลิกออเดอร์ (ก่อนเสิร์ฟ) | | | ✓ | | ✓ |
+| รับชำระเงิน `served → completed` | | | ✓ | ✓ | ✓ |
+| จัดการเมนู (CRUD) | | | | | ✓ |
+| แดชบอร์ด / รายงานยอดขาย / สต็อก | | | | | ✓ |
+
+สถานะเดินหน้าทีละขั้นเท่านั้น ข้ามขั้นหรือย้อนกลับไม่ได้ (409) และ role ที่ไม่มีสิทธิ์ได้ 403
+
+## SQL features
+| ประเภท | ชื่อ | ทำอะไร | เห็นผลที่ไหน |
+|---|---|---|---|
+| Trigger | `trg_order_item_bi_stock` | BEFORE INSERT `order_item`: ตัดสต็อกวัตถุดิบตามสูตร ถ้าไม่พอ `SIGNAL` ยกเลิกทั้งออเดอร์ | แดชบอร์ด → สต็อกวัตถุดิบ / ลูกค้าเห็น "Out of stock" |
+| Trigger | `trg_orders_ai_table` | AFTER INSERT `orders`: ออเดอร์ทานที่ร้าน → โต๊ะเป็น `occupied` | แดชบอร์ด → สถานะโต๊ะ |
+| Trigger | `trg_orders_au_status` | AFTER UPDATE `orders`: ยกเลิก → คืนสต็อก, ออเดอร์จบครบ → โต๊ะกลับเป็น `available` | แดชบอร์ด |
+| Stored procedure | `sp_sales_summary(p_date)` | สรุปรายได้, ออเดอร์ที่ชำระ, ยอดเฉลี่ย, ยกเลิก, จำนวนจาน ของวันที่เลือก | แดชบอร์ด → เลือกวันที่ (`CALL` จาก `dashboardModel.js`) |
+
+> TiDB Cloud (ฐานข้อมูลของเว็บ demo) ไม่รองรับ trigger และ stored procedure: backend จะคำนวณยอดขายด้วย SQL query แทน และหน้าแดชบอร์ดบอกไว้ว่าใช้วิธีไหน ให้ demo ส่วนนี้กับ MySQL
+
+## Security
+- SQL ทุกคำสั่งใช้ parameterized query (`?`) ไม่มีการต่อ string จากข้อมูลผู้ใช้
+- รหัสผ่านเก็บเป็น bcrypt hash, login ผิดตอบข้อความเดียวกันทุกกรณี
+- ค่าลับทั้งหมด (DB, JWT, รหัสบัญชีตัวอย่าง) อยู่ใน `.env` ซึ่งไม่ถูก commit; เปลี่ยนรหัสได้ด้วย `npm run set:password -- <username>`
+- error ที่ไม่คาดคิดตอบ `Internal server error` เท่านั้น รายละเอียด DB ถูก log ไว้ที่ server ไม่ส่งให้ client
+- ราคาอาหารดึงจาก DB เสมอ ไม่เชื่อราคาจาก client; รับชำระเงินใช้ transaction + `SELECT ... FOR UPDATE`
 
 ## Team workflow
-- ห้าม push ตรงเข้า `main` ให้แตก branch เช่น `feature/checkout-page` แล้วเปิด Pull Request
 - ห้าม commit ไฟล์ `.env`
-
-## Timeline
-Week 8 Proposal · Week 9 ER + Schema · Week 10-11 UI Mockups · Week 12-13 Backend + Triggers · Week 14 Integration/QA · Week 15 Final
+- push เข้า `main` แล้ว Render (backend) และ Vercel (frontend) จะ deploy ให้อัตโนมัติ

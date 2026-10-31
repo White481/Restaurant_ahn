@@ -30,6 +30,10 @@ const panel = 'rounded-xl border border-stone-300 bg-stone-50 dark:border-stone-
 const titleText = 'text-[13px] font-bold uppercase tracking-[0.08em]';
 const panelTitle = `mb-4 ${titleText}`;
 
+// วัตถุดิบที่ถือว่า "ใกล้หมด" (หน่วยกรัม/มล. < 1000, หน่วยชิ้น < 20)
+const isLowStock = (ing) => ing.quantity_in_stock < (['g', 'ml'].includes(ing.unit) ? 1000 : 20);
+const todayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+
 export default function DashboardPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -37,10 +41,11 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [date, setDate] = useState(todayIso); // วันที่ของรายงาน (ส่งเป็นพารามิเตอร์ให้ stored procedure)
 
   const refresh = useCallback(async () => {
     try {
-      const data = await api.getDashboardStats();
+      const data = await api.getDashboardStats(date);
       setStats(data);
       setLastUpdated(Date.now());
       setError('');
@@ -52,7 +57,7 @@ export default function DashboardPage() {
       }
       setError(e.message);
     }
-  }, [logout, navigate]);
+  }, [logout, navigate, date]);
 
   usePolling(refresh, REFRESH_MS);
 
@@ -62,9 +67,9 @@ export default function DashboardPage() {
 
   const kpis = stats
     ? [
-        { label: t('dash.revenue'), value: formatBaht(stats.today_revenue), accent: true },
-        { label: t('dash.ordersToday'), value: stats.today_order_count },
-        { label: t('dash.avgOrder'), value: formatBaht(stats.avg_order_value) },
+        { label: t('dash.revenue'), value: formatBaht(stats.sales.revenue), sub: t('dash.paidOrders', { n: stats.sales.paid_orders }), accent: true },
+        { label: t('dash.ordersToday'), value: stats.sales.total_orders, sub: t('dash.cancelledN', { n: stats.sales.cancelled }) },
+        { label: t('dash.avgOrder'), value: formatBaht(stats.sales.avg_order), sub: t('dash.itemsSold', { n: stats.sales.items_sold }) },
         { label: t('dash.activeTables'), value: stats.table_stats.occupied || 0, sub: `/ ${tableTotal}` }
       ]
     : [];
@@ -84,6 +89,31 @@ export default function DashboardPage() {
           <Button onClick={refresh}>{t('common.retry')}</Button>
         </EmptyState>
       )}
+
+      {/* เลือกวันที่ของรายงาน: เปลี่ยนแล้วเรียก stored procedure ใหม่ด้วยวันที่นั้น */}
+      <div className="mb-5 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1.5 text-[11px] font-bold uppercase tracking-[0.09em] text-stone-500 dark:text-stone-400">
+          {t('dash.date')}
+          <input
+            type="date"
+            value={date}
+            max={todayIso()}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            className="min-h-10 rounded-lg border border-stone-300 bg-stone-50 px-3 text-sm font-medium normal-case tracking-normal text-stone-950 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-50"
+          />
+        </label>
+        {date !== todayIso() && (
+          <Button variant="secondary" size="sm" className="min-h-10" onClick={() => setDate(todayIso())}>
+            {t('dash.today')}
+          </Button>
+        )}
+        {stats && (
+          <p className="ml-auto flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+            <span className={`size-1.5 rounded-full ${stats.sales.source === 'procedure' ? 'bg-sage-500' : 'bg-turmeric-500'}`} aria-hidden="true" />
+            {stats.sales.source === 'procedure' ? t('dash.viaProc') : t('dash.viaQuery')}
+          </p>
+        )}
+      </div>
 
       {stats && (
         <div className="flex flex-col gap-6">
@@ -181,6 +211,39 @@ export default function DashboardPage() {
               </section>
             </div>
           </div>
+
+          {/* สต็อกวัตถุดิบ: trigger ตัดสต็อกตอนสั่ง และคืนตอนยกเลิก (เห็นตัวเลขเปลี่ยนทันทีหลังสั่งอาหาร) */}
+          <section className={`${panel} p-5`}>
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className={titleText}>{t('dash.stock')}</h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400">{t('dash.stockHint')}</p>
+            </div>
+            {stats.ingredients.length === 0 ? (
+              <p className="py-4 text-center text-sm text-stone-500 dark:text-stone-400">{t('dash.noStock')}</p>
+            ) : (
+              <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {stats.ingredients.map((ing) => {
+                  const low = isLowStock(ing);
+                  return (
+                    <li
+                      key={ing.ingredient_id}
+                      className={`flex items-baseline justify-between gap-2 rounded-lg px-3 py-2 ${
+                        low ? 'bg-chili-100 text-chili-700 dark:bg-chili-900 dark:text-chili-300' : 'bg-stone-100 dark:bg-stone-950'
+                      }`}
+                    >
+                      <span className="truncate text-sm">
+                        {ing.ingredient_name}
+                        {low && <span className="ml-1.5 text-[11px] font-bold uppercase">{t('dash.lowStock')}</span>}
+                      </span>
+                      <strong className="shrink-0 font-display tabular-nums">
+                        {Number(ing.quantity_in_stock).toLocaleString()} <span className="font-sans text-xs font-normal">{ing.unit}</span>
+                      </strong>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
           {/* ออเดอร์ล่าสุด: ตารางหัวส้ม + แถวสลับสี ตาม mockup */}
           <section className={`${panel} overflow-hidden`}>

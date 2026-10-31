@@ -51,7 +51,10 @@ export const api = {
   login: (username, password) => request('/api/auth/login', { method: 'POST', body: { username, password } }),
 
   getMenus: () => request('/api/menus'),
+  getAllMenus: () => request('/api/menus/all', { auth: true }), // admin: รวมเมนูที่ซ่อนไว้
   createMenu: (item) => request('/api/menus', { method: 'POST', body: item, auth: true }),
+  updateMenu: (id, item) => request(`/api/menus/${id}`, { method: 'PUT', body: item, auth: true }),
+  deleteMenu: (id) => request(`/api/menus/${id}`, { method: 'DELETE', auth: true }), // { result: 'deleted' | 'hidden' }
 
   // ส่ง token ไปด้วยถ้ามี (พนักงานสั่งแทนลูกค้า -> backend จะบันทึก employee_id ให้) ถ้าไม่มีก็สั่งแบบลูกค้าทั่วไป
   createOrder: (order) => request('/api/orders', { method: 'POST', body: order, auth: true }),
@@ -65,5 +68,6 @@ export const api = {
   payOrder: (id, body) => request(`/api/orders/${id}/pay`, { method: 'POST', body, auth: true }),
 
   // แดชบอร์ดสำหรับ admin: สรุปยอดรายได้ ออเดอร์ เมนูขายดี สถานะโต๊ะ ฯลฯ
-  getDashboardStats: () => request('/api/dashboard', { auth: true })
+  // date = 'YYYY-MM-DD' (ไม่ใส่ = วันนี้) ยอดขายมาจาก stored procedure sp_sales_summary
+  getDashboardStats: (date) => request(`/api/dashboard${date ? `?date=${encodeURIComponent(date)}` : ''}`, { auth: true })
 };

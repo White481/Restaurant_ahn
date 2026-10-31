@@ -20,8 +20,19 @@ export const NEXT_STEP = {
   served: 'completed'
 };
 
-// สถานะที่ยังยกเลิกได้
-export const CANCELLABLE = ['placed', 'preparing', 'ready'];
+// role ที่เปลี่ยนสถานะแต่ละขั้นได้ (สำเนาของ ORDER_TRANSITIONS ใน backend/src/config/permissions.js ต้องแก้คู่กัน)
+// ใช้แค่ซ่อนปุ่มที่ role นั้นกดไม่ได้ backend ตรวจซ้ำทุกครั้งอยู่แล้ว
+export const ORDER_TRANSITIONS = {
+  placed: { preparing: ['admin', 'chef'], cancelled: ['admin', 'waiter'] },
+  preparing: { ready: ['admin', 'chef'], cancelled: ['admin', 'waiter'] },
+  ready: { served: ['admin', 'waiter'], cancelled: ['admin', 'waiter'] }
+};
+
+// role นี้เปลี่ยนสถานะจาก from ไป to ได้ไหม (served -> completed ใช้สิทธิ์รับชำระเงินแทน)
+export function canTransition(role, from, to) {
+  if (from === 'served' && to === 'completed') return PAYMENT_ROLES.includes(role);
+  return Boolean(ORDER_TRANSITIONS[from]?.[to]?.includes(role));
+}
 
 // สถานะที่ต้องจับตาว่ารอนานเกินไปหรือไม่
 export const TIMED_STATUSES = ['placed', 'preparing', 'ready'];

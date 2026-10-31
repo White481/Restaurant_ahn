@@ -29,6 +29,13 @@ const errorHandler = (err, req, res, next) => {
     if (err.code === 'ER_NO_REFERENCED_ROW_2') {
         return res.status(400).json({ message: 'Referenced record does not exist' });
     }
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'This record is still used by other records' });
+    }
+    // trigger ปฏิเสธด้วย SIGNAL SQLSTATE '45000' (เช่น วัตถุดิบไม่พอ) ข้อความมาจาก trigger ที่เราเขียนเอง จึงส่งต่อได้
+    if (err.sqlState === '45000') {
+        return res.status(409).json({ message: err.sqlMessage });
+    }
 
     // error ที่ไม่คาดคิด: log ไว้ที่ server เท่านั้น ไม่ส่งรายละเอียดกลับไปให้ client
     console.error('Unexpected error:', err);

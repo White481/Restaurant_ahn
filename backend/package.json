@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "seed:users": "node scripts/seedUsers.js"
+    "seed:users": "node scripts/seedUsers.js",
+    "set:password": "node scripts/setPassword.js",
+    "test:e2e": "node tests/e2e.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

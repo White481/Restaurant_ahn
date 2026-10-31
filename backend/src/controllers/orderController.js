@@ -1,5 +1,6 @@
 const orderModel = require('../models/orderModel');
 const { HttpError, asyncHandler } = require('../middleware/errorHandler');
+const { checkTransition } = require('../config/permissions');
 
 // แปลงค่าเป็นจำนวนเต็มบวก (รับทั้งเลขและ string เลข เช่น "3") ถ้าไม่ใช่คืน null
 function toPositiveInt(value) {
@@ -84,9 +85,14 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
         throw new HttpError(400, 'Use POST /api/orders/:id/pay to complete an order');
     }
 
-    const found = await orderModel.updateStatus(id, status);
-    if (!found) throw new HttpError(404, 'Order not found');
+    const order = await orderModel.getStatus(id);
+    if (!order) throw new HttpError(404, 'Order not found');
 
+    // ตรวจทั้ง "ขั้นนี้เปลี่ยนได้ไหม" และ "role นี้มีสิทธิ์ไหม" ตามตารางใน config/permissions.js
+    const denied = checkTransition(req.user.role, order.status, status);
+    if (denied) throw new HttpError(denied.status, denied.message);
+
+    await orderModel.updateStatus(id, order.status, status);
     res.json({ message: 'Updated successfully', order_id: id, status });
 });
 

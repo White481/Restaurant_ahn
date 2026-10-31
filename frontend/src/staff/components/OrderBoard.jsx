@@ -3,7 +3,7 @@ import { BOARD_STATUSES } from '../../components/status.js';
 import OrderColumn from './OrderColumn.jsx';
 
 // กระดาน Kanban: 1 คอลัมน์ต่อ 1 สถานะที่ยังไม่จบ (มือถือเรียงลงมา, แท็บเล็ต 2 คอลัมน์, จอใหญ่ 4 คอลัมน์)
-export default function OrderBoard({ orders, now, freshIds, pendingIds, canPay, onAdvance, onCancel }) {
+export default function OrderBoard({ orders, now, freshIds, pendingIds, role, onAdvance, onCancel }) {
   const byStatus = useMemo(() => {
     const groups = Object.fromEntries(BOARD_STATUSES.map((status) => [status, []]));
     for (const order of orders) groups[order.status]?.push(order);
@@ -21,7 +21,7 @@ export default function OrderBoard({ orders, now, freshIds, pendingIds, canPay, 
           now={now}
           freshIds={freshIds}
           pendingIds={pendingIds}
-          canPay={canPay}
+          role={role}
           onAdvance={onAdvance}
           onCancel={onCancel}
         />

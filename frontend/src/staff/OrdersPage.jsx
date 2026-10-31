@@ -5,7 +5,7 @@ import Button from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
 import { useToast } from '../ui/Toast.jsx';
-import { FINISHED_STATUSES, PAYMENT_ROLES } from '../components/status.js';
+import { FINISHED_STATUSES } from '../components/status.js';
 import { useAlertSound } from '../hooks/useAlertSound.js';
 import { useLang } from '../i18n/LanguageContext.jsx';
 import { useNow } from '../hooks/useNow.js';
@@ -40,7 +40,6 @@ export default function OrdersPage() {
   const [cancelTarget, setCancelTarget] = useState(null);
   const [payTarget, setPayTarget] = useState(null); // ออเดอร์ที่กำลังรับชำระเงิน
   const [receiptOrder, setReceiptOrder] = useState(null); // ออเดอร์ที่เปิดดู/พิมพ์ใบเสร็จ
-  const canPay = PAYMENT_ROLES.includes(user.role);
 
   const knownIds = useRef(null); // ออเดอร์ที่เคยเห็นแล้ว ใช้ตรวจว่ามี "ออเดอร์ใหม่" เข้ามาไหม
   const freshTimers = useRef([]);
@@ -190,7 +189,7 @@ export default function OrdersPage() {
       )}
 
       {orders !== null && view === 'board' && (
-        <OrderBoard orders={active} now={now} freshIds={freshIds} pendingIds={pendingIds} canPay={canPay} onAdvance={handleAdvance} onCancel={setCancelTarget} />
+        <OrderBoard orders={active} now={now} freshIds={freshIds} pendingIds={pendingIds} role={user.role} onAdvance={handleAdvance} onCancel={setCancelTarget} />
       )}
       {orders !== null && view === 'history' && <HistoryList orders={finished} onReceipt={setReceiptOrder} />}
 

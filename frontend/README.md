@@ -16,9 +16,10 @@ npm run dev        # http://localhost:5173
 | `/order/:id` | ลูกค้า | ติดตามสถานะ (อัปเดตเองทุก 4 วินาที) |
 | `/staff/login` | พนักงาน | เข้าสู่ระบบ |
 | `/staff` | พนักงาน | กระดาน Kanban ออเดอร์ + แท็บประวัติ (รีเฟรชทุก 5 วินาที), รับชำระเงิน, ใบเสร็จ |
-| `/staff/menu` | admin | จัดการเมนู |
+| `/staff/menu` | admin | จัดการเมนู (เพิ่ม / แก้ไข / ซ่อน / ลบ) |
+| `/staff/dashboard` | admin | ยอดขายรายวัน (stored procedure), สถานะโต๊ะ, สต็อกวัตถุดิบ |
 
-ทดลอง: login ด้วยบัญชี demo จาก `npm run seed:users` (เช่น `admin` / `admin1234`)
+ทดลอง: login ด้วยบัญชีจาก `npm run seed:users` (รหัสผ่านตั้งใน `backend/.env` ที่ `SEED_PASSWORD`)
 
 ## ภาษา ไทย / English
 - สวิตช์ **ไทย | EN** อยู่แถบบนขวา (ข้างสวิตช์ ลูกค้า|พนักงาน) จำค่าไว้ในเครื่อง (`localStorage` คีย์ `oms_lang`)
