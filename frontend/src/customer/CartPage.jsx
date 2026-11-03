@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { formatBaht } from '../components/status.js';
+import PromptPayQr from '../components/PromptPayQr.jsx';
 import Button, { buttonClasses } from '../ui/Button.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Icon from '../ui/Icon.jsx';
@@ -169,6 +170,13 @@ export default function CartPage() {
           onChange={setPaymentMethod}
           options={PAY_OPTIONS.map((value) => ({ value, label: value ? t(`payment.${value}`) : t('checkout.payLater') }))}
         />
+
+        {paymentMethod === 'qr' && (
+          <div className="flex flex-col gap-2 rounded-xl border border-stone-300 bg-stone-50 px-4 py-4">
+            <PromptPayQr amount={totalPrice} />
+            <p className="text-center text-xs text-stone-500">{t('checkout.qrHint')}</p>
+          </div>
+        )}
 
         <label className={labelClass}>
           {t('checkout.note')}

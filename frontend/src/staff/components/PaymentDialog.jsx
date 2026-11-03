@@ -3,6 +3,7 @@ import Button from '../../ui/Button.jsx';
 import Modal from '../../ui/Modal.jsx';
 import { inputClass, labelClass } from '../../ui/fields.js';
 import { SHOP } from '../../config/shop.js';
+import PromptPayQr from '../../components/PromptPayQr.jsx';
 import { useLang } from '../../i18n/LanguageContext.jsx';
 import { cashSuggestions, changeFor, money, toCents } from '../../utils/receipt.js';
 
@@ -131,7 +132,12 @@ export default function PaymentDialog({ order, onClose, onConfirm }) {
             </div>
           </>
         ) : (
-          <p className="rounded-lg bg-tea-100 px-3 py-2.5 text-sm text-tea-700 dark:bg-tea-900 dark:text-tea-300">{t('pay.nonCash')}</p>
+          <>
+            {method === 'qr' && <PromptPayQr amount={total} />}
+            <p className="rounded-lg bg-tea-100 px-3 py-2.5 text-sm text-tea-700 dark:bg-tea-900 dark:text-tea-300">
+              {method === 'qr' ? t('pay.qrHint') : t('pay.nonCash')}
+            </p>
+          </>
         )}
 
         {error && (

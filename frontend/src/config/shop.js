@@ -6,5 +6,7 @@ export const SHOP = {
   taxId: '[เลข 13 หลัก]',
   // อัตรา VAT และการตั้งสมมติฐานว่า "ราคาในเมนูรวม VAT แล้ว"
   // (ถ้าร้านบวก VAT เพิ่มจากราคาเมนู ต้องแก้สูตรใน utils/receipt.js)
-  vatRate: 0.07
+  vatRate: 0.07,
+  // รูป QR พร้อมเพย์ของร้าน (frontend/public/) แสดงเมื่อเลือกจ่ายด้วย QR ทั้งหน้าตะกร้าและหน้ารับชำระเงิน
+  promptPayQr: '/promptpay-qr.jpg'
 };
