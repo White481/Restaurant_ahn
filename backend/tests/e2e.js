@@ -49,8 +49,10 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     // ---------- trigger: ตัดสต็อก + โต๊ะ occupied ----------
     const pork0 = await stock('หมูสับ'), egg0 = await stock('ไข่ไก่');
     await db.query("UPDATE dining_table SET status='available' WHERE table_id=2");
-    const o1 = await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', items: [{ menu_item_id: 1, quantity: 2 }] });
+    const o1 = await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', payment_method: 'cash', items: [{ menu_item_id: 1, quantity: 2 }] });
     check('customer creates order', o1.status === 201, JSON.stringify(o1.data));
+    check('order without payment method -> 400', (await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', items: [{ menu_item_id: 1, quantity: 1 }] })).status === 400);
+    check('order with unknown payment method -> 400', (await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', payment_method: 'later', items: [{ menu_item_id: 1, quantity: 1 }] })).status === 400);
     const id1 = o1.data.order_id;
     check('trigger: pork -200g', pork0 - (await stock('หมูสับ')) === 200, `${pork0} -> ${await stock('หมูสับ')}`);
     check('trigger: egg -2', egg0 - (await stock('ไข่ไก่')) === 2);
@@ -74,14 +76,14 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
 
     // ---------- cancel -> คืนสต็อก ----------
     const prawn0 = await stock('กุ้งสด');
-    const o2 = await call('POST', '/orders', { table_id: 3, order_type: 'dine_in', items: [{ menu_item_id: 2, quantity: 1 }] });
+    const o2 = await call('POST', '/orders', { table_id: 3, order_type: 'dine_in', payment_method: 'cash', items: [{ menu_item_id: 2, quantity: 1 }] });
     check('trigger: prawn -150g', prawn0 - (await stock('กุ้งสด')) === 150);
     check('chef cancel 403', (await call('PATCH', `/orders/${o2.data.order_id}`, { status: 'cancelled' }, tok.chef)).status === 403);
     check('waiter cancel 200', (await call('PATCH', `/orders/${o2.data.order_id}`, { status: 'cancelled' }, tok.waiter)).status === 200);
     check('trigger: prawn restored after cancel', (await stock('กุ้งสด')) === prawn0);
 
     // ---------- trigger SIGNAL: ของไม่พอ ----------
-    const big = await call('POST', '/orders', { table_id: 4, order_type: 'take_away', items: [{ menu_item_id: 2, quantity: 99 }] });
+    const big = await call('POST', '/orders', { table_id: 4, order_type: 'take_away', payment_method: 'qr', items: [{ menu_item_id: 2, quantity: 99 }] });
     check('out of stock -> 409 from trigger', big.status === 409, JSON.stringify(big.data));
     check('out of stock: order rolled back', (await stock('กุ้งสด')) === prawn0);
 
@@ -94,7 +96,7 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('menu Update (hide) 200', u.status === 200);
     check('hidden menu not public', !(await call('GET', '/menus')).data.some((m) => m.menu_item_id === mid));
     check('hidden menu in admin list', (await call('GET', '/menus/all', null, tok.admin)).data.some((m) => m.menu_item_id === mid && m.is_active === 0));
-    check('order hidden menu -> 400', (await call('POST', '/orders', { table_id: 1, order_type: 'take_away', items: [{ menu_item_id: mid, quantity: 1 }] })).status === 400);
+    check('order hidden menu -> 400', (await call('POST', '/orders', { table_id: 1, order_type: 'take_away', payment_method: 'qr', items: [{ menu_item_id: mid, quantity: 1 }] })).status === 400);
     const d = await call('DELETE', `/menus/${mid}`, null, tok.admin);
     check('menu Delete unused -> deleted', d.status === 200 && d.data.result === 'deleted');
     const d2 = await call('DELETE', '/menus/1', null, tok.admin);

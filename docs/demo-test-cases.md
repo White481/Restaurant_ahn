@@ -92,4 +92,4 @@ CALL sp_sales_summary(CURDATE());
 
 ## 7. Professionalism (3)
 - อธิบาย flow ของข้อมูล 1 ออเดอร์: หน้าเว็บ → `POST /api/orders` → controller ตรวจข้อมูล → model เปิด transaction → INSERT `orders` + `order_item` (trigger ตัดสต็อก) → COMMIT
-- ปิดท้ายด้วย `npm run test:e2e` ให้เห็น **62 passed, 0 failed**
+- ปิดท้ายด้วย `npm run test:e2e` ให้เห็น **64 passed, 0 failed**

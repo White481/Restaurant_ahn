@@ -13,7 +13,7 @@ import { useCart } from './CartContext.jsx';
 import CustomerShell from './components/CustomerShell.jsx';
 import QtyStepper from './components/QtyStepper.jsx';
 
-const PAY_OPTIONS = ['', 'cash', 'card', 'qr']; // '' = จ่ายทีหลัง
+const PAY_OPTIONS = ['cash', 'card', 'qr'];
 
 // ปุ่มเลือกแบบ segmented (แทน radio/select) ตาม mockup
 function Segmented({ legend, name, value, options, onChange }) {
@@ -51,7 +51,7 @@ export default function CartPage() {
   const { lang, t } = useLang();
   const { items, tableId, setTableId, setQuantity, clear, totalPrice, totalQty } = useCart();
   const [orderType, setOrderType] = useState('dine_in');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [note, setNote] = useState('');
   const [tableInput, setTableInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -83,9 +83,9 @@ export default function CartPage() {
     const payload = {
       table_id: effectiveTable,
       order_type: orderType,
+      payment_method: paymentMethod,
       items: items.map(({ menu_item_id, quantity }) => ({ menu_item_id, quantity }))
     };
-    if (paymentMethod) payload.payment_method = paymentMethod;
     if (note.trim()) payload.special_request = note.trim();
 
     setSubmitting(true); // กันกดซ้ำจนได้ออเดอร์สองใบ
@@ -168,7 +168,7 @@ export default function CartPage() {
           name="payment"
           value={paymentMethod}
           onChange={setPaymentMethod}
-          options={PAY_OPTIONS.map((value) => ({ value, label: value ? t(`payment.${value}`) : t('checkout.payLater') }))}
+          options={PAY_OPTIONS.map((value) => ({ value, label: t(`payment.${value}`) }))}
         />
 
         {paymentMethod === 'qr' && (

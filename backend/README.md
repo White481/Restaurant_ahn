@@ -14,7 +14,7 @@
 | `npm run seed:users` | สร้างบัญชีพนักงานตัวอย่าง |
 | `npm run set:password -- <username>` | เปลี่ยนรหัสผ่าน (ถามรหัสใหม่ ไม่ต้องพิมพ์ในคำสั่ง) |
 | `npm run migrate:8tables` | ย้ายฐานข้อมูลเดิม 11 ตาราง → 8 ตาราง (`staff`, ชื่อ/เบอร์ใน `reservation`) ข้อมูลไม่หาย รันซ้ำได้ |
-| `npm run test:e2e` | 62 test cases ยิง API จริง (roles, triggers, CRUD, procedure, การจอง) แล้วคืนข้อมูลเดิม |
+| `npm run test:e2e` | 64 test cases ยิง API จริง (roles, triggers, CRUD, procedure, การจอง) แล้วคืนข้อมูลเดิม |
 
 ## API
 สิทธิ์อยู่ใน `src/config/permissions.js` · เรียก endpoint ที่ต้อง login: ใส่ header `Authorization: Bearer <token>`
@@ -27,7 +27,7 @@
 | POST   | `/api/menus` | admin | เพิ่มเมนู |
 | PUT    | `/api/menus/:id` | admin | แก้ไขเมนู / ซ่อน-แสดง (`is_active`) |
 | DELETE | `/api/menus/:id` | admin | ลบเมนู (เคยถูกสั่งแล้ว -> ซ่อนแทน, `result: deleted \| hidden`) |
-| POST   | `/api/orders` | public | สั่งอาหาร (transaction: orders + order_item, trigger ตัดสต็อก) |
+| POST   | `/api/orders` | public | สั่งอาหาร `{table_id, order_type, payment_method: cash|card|qr, items}` (transaction: orders + order_item, trigger ตัดสต็อก) |
 | GET    | `/api/orders/:id/status` | public | สถานะของออเดอร์เดียว (หน้าติดตามของลูกค้า) |
 | GET    | `/api/orders` | พนักงานทุก role | ออเดอร์ + รายการอาหาร (`?status=placed` กรองได้) |
 | PATCH  | `/api/orders/:id` | ตาม `ORDER_TRANSITIONS` | เปลี่ยนสถานะทีละขั้น (chef: ครัว, waiter: เสิร์ฟ/ยกเลิก) |

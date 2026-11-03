@@ -2,7 +2,8 @@ const db = require('../config/db');
 const { HttpError } = require('../middleware/errorHandler');
 
 exports.ORDER_TYPES = ['dine_in', 'take_away'];
-exports.PAYMENT_METHODS = ['cash', 'card', 'qr', 'other'];
+// วิธีจ่ายที่ร้านรับ (ใช้ทั้งตอนสั่งและตอนรับชำระเงิน) ENUM ใน DB ยังมี 'other' ไว้รองรับข้อมูลเก่า
+exports.PAYMENT_METHODS = ['cash', 'card', 'qr'];
 exports.VALID_STATUSES = ['placed', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
 
 exports.createOrder = async (orderData, items) => {

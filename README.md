@@ -33,7 +33,7 @@
    ```bash
    cd frontend && npm install && npm run dev   # http://localhost:5173
    ```
-4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (62 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
+4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (64 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
 
 ## Roles & permissions
 สิทธิ์ทั้งหมดอยู่ที่ [`backend/src/config/permissions.js`](backend/src/config/permissions.js) ที่เดียว backend ตรวจทุก request (JWT) ส่วน frontend ซ่อนปุ่มที่ role นั้นกดไม่ได้
