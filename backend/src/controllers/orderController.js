@@ -129,7 +129,7 @@ exports.payOrder = asyncHandler(async (req, res) => {
     const result = await orderModel.payOrder(id, {
         payment_method,
         amount_received: received,
-        paid_by: req.user.employee_id // มาจาก token เท่านั้น
+        paid_by: req.user.staff_id // มาจาก token เท่านั้น
     });
     res.json({ message: 'Payment recorded', ...result });
 });

@@ -26,7 +26,7 @@ exports.requireAuth = (allowedRoles = []) => (req, res, next) => {
 };
 
 // ไม่บังคับ login แต่ถ้ามี token ที่ถูกต้องก็ใส่ req.user ให้
-// ใช้กับ POST /orders: ลูกค้าสั่งได้โดยไม่ login ส่วนพนักงานที่ login จะถูกบันทึก employee_id ให้เอง
+// ใช้กับ POST /orders: ลูกค้าสั่งได้โดยไม่ login ส่วนพนักงานที่ login จะถูกบันทึก staff_id ให้เอง
 exports.optionalAuth = (req, res, next) => {
     const token = readToken(req);
     if (token) {

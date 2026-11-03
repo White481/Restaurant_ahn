@@ -15,7 +15,7 @@
 
 | # | ทำอะไร | ผลที่ต้องได้ |
 |---|---|---|
-| 1.1 | เปิด [`docs/er-diagram.png`](er-diagram.png) | 8 entities, 8 relationships, PK/FK ครบ · ตาราง `customer` และ `reservation` ถูกใช้จริงในระบบจองโต๊ะ |
+| 1.1 | เปิด [`docs/er-diagram.png`](er-diagram.png) | 8 entities, 7 relationships, PK/FK ครบ · ทุกตารางถูกใช้จริง · M:N 2 จุด (`order_item`, `menu_item_ingredient`) · เหตุผลที่ลดจาก 11 ตารางอยู่ท้าย [`er-diagram.md`](er-diagram.md) |
 | 1.2 | เปิด `database/schema.sql` ชี้ `PRIMARY KEY`, `FOREIGN KEY ... REFERENCES`, composite PK ของ `menu_item_ingredient` | ตรงกับ ER ทุกตาราง |
 | 1.3 | รัน `SHOW TABLES;` และ `SHOW CREATE TABLE order_item;` | เห็น FK `fk_orderitem_order`, `fk_orderitem_menuitem` |
 | 1.4 | อธิบายการเชื่อม DB กับแอป: `backend/.env` → `src/config/db.js` (connection pool) → `models/*.js` (SQL) → `controllers/` → `routes/` → `app.js` | — |
@@ -32,7 +32,7 @@
 | 2.5 | **Delete** | กด "ลบ" ที่ "ข้าวไข่เจียว" → ยืนยัน | "ลบเมนูแล้ว" หายจาก DB |
 | 2.6 | **Delete ที่ติด FK** | กด "ลบ" ที่เมนูที่เคยถูกสั่ง เช่น ข้าวผัดกะเพรา | "เคยถูกสั่งแล้ว จึงซ่อนไว้แทนการลบ" (FK `ON DELETE RESTRICT` ปกป้องประวัติออเดอร์) แล้วกด "แสดง" คืน |
 | 2.7 | ออเดอร์: Create / Read / Update | ลูกค้าสั่งอาหาร → ขึ้นบนกระดานพนักงาน → เลื่อนสถานะ | ทำงานครบ |
-| 2.8 | การจอง: **Create** | ลูกค้าเปิด `/reserve` จองวันนี้ 2 คน | ได้เลขที่การจอง + โต๊ะที่ระบบเลือกให้ (สร้าง/ใช้แถว `customer` เดิมจากเบอร์โทร) |
+| 2.8 | การจอง: **Create** | ลูกค้าเปิด `/reserve` จองวันนี้ 2 คน | ได้เลขที่การจอง + โต๊ะที่ระบบเลือกให้ (ชื่อและเบอร์เก็บใน `reservation`) |
 | 2.9 | การจอง: **Read / Update** | พนักงาน → การจอง → ยืนยัน → ย้าย/แก้ไข เปลี่ยนโต๊ะหรือเวลา | อัปเดตทันที ถ้าย้ายไปโต๊ะที่จองซ้อนเวลา → แจ้ง "already reserved" |
 | 2.10 | การจอง: **Delete** | admin กด ✕ ที่การจอง | ลบถาวร (waiter ไม่เห็นปุ่มนี้) |
 
@@ -56,7 +56,7 @@
 | 4.2 | หน้า login พิมพ์ username `admin' OR '1'='1` | "Invalid username or password" (ไม่หลุด) |
 | 4.3 | เปิด `backend/.env.example` และ `.gitignore` | ไม่มีรหัสจริงในโค้ด, `.env` ไม่ถูก commit |
 | 4.4 | เปิด `middleware/errorHandler.js` แล้วลองเปิด `http://localhost:3000/api/orders/abc/status` | ได้ `Invalid order id` ไม่มีรายละเอียด DB |
-| 4.5 | (optional) `SELECT username, password_hash FROM sys_user;` | เห็นเป็น bcrypt hash `$2a$10$...` |
+| 4.5 | (optional) `SELECT username, password_hash FROM staff;` | เห็นเป็น bcrypt hash `$2a$10$...` |
 
 ## 5. SQL Features (3) — โชว์สด
 ใช้ 2 จอคู่กัน: หน้าเว็บ + MySQL
@@ -92,4 +92,4 @@ CALL sp_sales_summary(CURDATE());
 
 ## 7. Professionalism (3)
 - อธิบาย flow ของข้อมูล 1 ออเดอร์: หน้าเว็บ → `POST /api/orders` → controller ตรวจข้อมูล → model เปิด transaction → INSERT `orders` + `order_item` (trigger ตัดสต็อก) → COMMIT
-- ปิดท้ายด้วย `npm run test:e2e` ให้เห็น **60 passed, 0 failed**
+- ปิดท้ายด้วย `npm run test:e2e` ให้เห็น **62 passed, 0 failed**

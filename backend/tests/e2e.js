@@ -66,6 +66,9 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('chef pay 403', (await call('POST', `/orders/${id1}/pay`, { payment_method: 'card' }, tok.chef)).status === 403);
     const pay = await call('POST', `/orders/${id1}/pay`, { payment_method: 'cash', amount_received: 200 }, tok.cashier);
     check('cashier pays cash 200 + change', pay.status === 200 && pay.data.change === 80, JSON.stringify(pay.data));
+    const [[paidRow]] = await db.query(
+      `SELECT s.username FROM orders o JOIN staff s ON s.staff_id = o.paid_by WHERE o.order_id = ?`, [id1]);
+    check('paid_by records the cashier (receipt name)', paidRow && paidRow.username === 'cashier', JSON.stringify(paidRow));
     check('trigger: table 2 available after paid', (await tableStatus(2)) === 'available');
     check('completed order cannot change 409', (await call('PATCH', `/orders/${id1}`, { status: 'cancelled' }, tok.admin)).status === 409);
 

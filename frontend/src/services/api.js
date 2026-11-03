@@ -56,7 +56,7 @@ export const api = {
   updateMenu: (id, item) => request(`/api/menus/${id}`, { method: 'PUT', body: item, auth: true }),
   deleteMenu: (id) => request(`/api/menus/${id}`, { method: 'DELETE', auth: true }), // { result: 'deleted' | 'hidden' }
 
-  // ส่ง token ไปด้วยถ้ามี (พนักงานสั่งแทนลูกค้า -> backend จะบันทึก employee_id ให้) ถ้าไม่มีก็สั่งแบบลูกค้าทั่วไป
+  // ส่ง token ไปด้วยถ้ามี (พนักงานสั่งแทนลูกค้า -> backend จะบันทึก staff_id ให้) ถ้าไม่มีก็สั่งแบบลูกค้าทั่วไป
   createOrder: (order) => request('/api/orders', { method: 'POST', body: order, auth: true }),
   getOrderStatus: (id) => request(`/api/orders/${id}/status`),
 

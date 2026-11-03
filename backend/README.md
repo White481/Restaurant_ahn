@@ -2,7 +2,7 @@
 
 ## Setup
 1. สร้างฐานข้อมูลตามลำดับ: `database/schema.sql` → `triggers.sql` → `procedures.sql` → `seed.sql`
-   (ฐานข้อมูลเดิม: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรันแทน)
+   (ฐานข้อมูลเดิม: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรัน แล้ว `npm run migrate:8tables`)
 2. `cd backend && npm install`
 3. `cp .env.example .env` แล้วแก้ค่าใน `.env` (รหัสผ่าน DB, `JWT_SECRET`, `SEED_PASSWORD`)
 4. `npm run seed:users`  (สร้างบัญชี admin / chef / waiter / cashier ด้วยรหัสจาก `.env`)
@@ -13,7 +13,8 @@
 | `npm run dev` | รัน server (รีสตาร์ตเองเมื่อแก้โค้ด) |
 | `npm run seed:users` | สร้างบัญชีพนักงานตัวอย่าง |
 | `npm run set:password -- <username>` | เปลี่ยนรหัสผ่าน (ถามรหัสใหม่ ไม่ต้องพิมพ์ในคำสั่ง) |
-| `npm run test:e2e` | 60 test cases ยิง API จริง (roles, triggers, CRUD, procedure, การจอง) แล้วคืนข้อมูลเดิม |
+| `npm run migrate:8tables` | ย้ายฐานข้อมูลเดิม 11 ตาราง → 8 ตาราง (`staff`, ชื่อ/เบอร์ใน `reservation`) ข้อมูลไม่หาย รันซ้ำได้ |
+| `npm run test:e2e` | 62 test cases ยิง API จริง (roles, triggers, CRUD, procedure, การจอง) แล้วคืนข้อมูลเดิม |
 
 ## API
 สิทธิ์อยู่ใน `src/config/permissions.js` · เรียก endpoint ที่ต้อง login: ใส่ header `Authorization: Bearer <token>`

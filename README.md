@@ -21,7 +21,7 @@
    mysql -u root -p < database/procedures.sql
    mysql -u root -p < database/seed.sql
    ```
-   ฐานข้อมูลเดิมที่สร้างไว้แล้ว: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรัน (เรียงตามเลข)
+   ฐานข้อมูลเดิมที่สร้างไว้แล้ว: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรัน (เรียงตามเลข) แล้วรัน `cd backend && npm run migrate:8tables` (ย้ายจาก 11 ตารางเป็น 8 ตาราง ข้อมูลเดิมไม่หาย รันซ้ำได้)
 2. Backend
    ```bash
    cd backend && npm install
@@ -33,7 +33,7 @@
    ```bash
    cd frontend && npm install && npm run dev   # http://localhost:5173
    ```
-4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (60 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
+4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (62 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
 
 ## Roles & permissions
 สิทธิ์ทั้งหมดอยู่ที่ [`backend/src/config/permissions.js`](backend/src/config/permissions.js) ที่เดียว backend ตรวจทุก request (JWT) ส่วน frontend ซ่อนปุ่มที่ role นั้นกดไม่ได้

@@ -128,7 +128,7 @@ exports.getRecentOrders = async (limit = 10) => {
                 NULLIF(CONCAT_WS(' ', s.first_name, s.last_name), '') AS employee_name
          FROM orders o
          LEFT JOIN dining_table t ON t.table_id = o.table_id
-         LEFT JOIN staff s ON s.staff_id = o.paid_by
+         LEFT JOIN staff s ON s.staff_id = o.staff_id
          ORDER BY o.order_date DESC
          LIMIT ?`,
         [limit]

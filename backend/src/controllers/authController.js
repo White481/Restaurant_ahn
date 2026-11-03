@@ -33,7 +33,7 @@ exports.login = asyncHandler(async (req, res) => {
         message: 'Login successful',
         token,
         user: {
-            id: user.user_id,
+            id: user.staff_id,
             username: user.username,
             role: user.role,
             employee_name: `${user.first_name} ${user.last_name}`
