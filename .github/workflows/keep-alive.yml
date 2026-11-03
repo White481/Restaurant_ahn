@@ -1,0 +1,16 @@
+# ปลุก backend บน Render (แผนฟรีหลับเมื่อไม่มีคนใช้ 15 นาที) ทุก 10 นาที
+# GitHub อาจเลื่อนเวลารันได้บ้าง ถ้าต้องการให้ชัวร์ใช้ UptimeRobot ทุก 5 นาทีคู่กัน
+name: Keep backend awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # กดรันเองได้ที่แท็บ Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping Render backend
+        run: curl --silent --show-error --fail --max-time 90 --retry 3 --retry-delay 10 https://restaurant-ahn-1.onrender.com/
