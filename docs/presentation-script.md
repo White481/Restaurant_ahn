@@ -1,7 +1,7 @@
 # สคริปต์ Presentation — All About Food! (3 คน · ประมาณ 15 นาที + Q&A)
 
 แบ่งตาม rubric 30 คะแนน ให้แต่ละคนรับผิดชอบหัวข้อชัดเจน แต่**ทุกคนต้องตอบคำถามของส่วนอื่นได้** (Professionalism 3 คะแนน ดูรายคน)
-ขั้นตอนกดบนจอแบบละเอียด: [`demo-test-cases.md`](demo-test-cases.md)
+ขั้นตอนกดบนจอแบบละเอียด: [`demo-test-cases.md`](demo-test-cases.md) · ฉบับพูดภาษาอังกฤษ + คำอธิบายภาษาไทย: [`presentation-script-en.pdf`](presentation-script-en.pdf)
 
 | คน | หัวข้อ | เกณฑ์ที่ครอบคลุม | เวลา |
 |---|---|---|---|
