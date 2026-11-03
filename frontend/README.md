@@ -11,13 +11,12 @@ npm run dev        # http://localhost:5173
 ## หน้าต่างๆ
 | URL | ผู้ใช้ | หน้าที่ |
 |---|---|---|
-| `/?table=1` | ลูกค้า | เมนูแบบ grid + ค้นหา + แท็บหมวด + ตะกร้า (ลิงก์ใน QR ของโต๊ะ เลข = `table_id`) |
-| `/cart` | ลูกค้า | ยืนยันสั่งอาหาร (checkout) |
+| `/?table=1` | ลูกค้า | เมนูแบบ grid + ค้นหา + แท็บหมวด + ตะกร้า (ลิงก์ใน QR ของโต๊ะ เลข = `table_id`) · เปิด `/` เฉยๆ ดูเมนูได้แต่สั่งไม่ได้ |
+| `/cart` | ลูกค้า | ยืนยันสั่งอาหาร (checkout) · สั่งได้เมื่อพนักงานเปิดโต๊ะแล้ว · เลือก QR จะเห็นรูป QR พร้อมเพย์ |
 | `/order/:id` | ลูกค้า | ติดตามสถานะ (อัปเดตเองทุก 4 วินาที) |
-| `/reserve` | ลูกค้า | จองโต๊ะล่วงหน้า (ระบบเลือกโต๊ะให้) |
 | `/staff/login` | พนักงาน | เข้าสู่ระบบ |
 | `/staff` | พนักงาน | กระดาน Kanban ออเดอร์ + แท็บประวัติ (รีเฟรชทุก 5 วินาที), รับชำระเงิน, ใบเสร็จ |
-| `/staff/reservations` | admin, waiter | การจองโต๊ะ: ยืนยัน / ลูกค้ามาถึง / ยกเลิก / ย้ายโต๊ะ (ลบได้เฉพาะ admin) |
+| `/staff/tables` | admin, waiter | เปิด / ปิดโต๊ะ (ลูกค้าสั่งได้เฉพาะโต๊ะที่เปิด), admin ปิดใช้งานโต๊ะได้ |
 | `/staff/menu` | admin | จัดการเมนู (เพิ่ม / แก้ไข / ซ่อน / ลบ) |
 | `/staff/dashboard` | admin | ยอดขายรายวัน (stored procedure), สถานะโต๊ะ, สต็อกวัตถุดิบ |
 
@@ -44,13 +43,13 @@ npm run dev        # http://localhost:5173
 ```
 ui/          Button, Modal, Toast, Skeleton, EmptyState, fields  (ชิ้นส่วน UI กลาง)
 hooks/       usePolling, useNow, useTheme, useAlertSound
-components/  StatusBadge, Receipt, ModeSwitch, LangSwitch + status.js (ค่าคงที่สถานะ)
+components/  StatusBadge, Receipt, PromptPayQr, ModeSwitch, LangSwitch + status.js (ค่าคงที่สถานะ + สิทธิ์)
 i18n/        messages.js (ข้อความ th/en), LanguageContext, ตัวแปล/จัดรูปแบบวันที่
 config/      shop.js (ข้อมูลร้าน + อัตรา VAT)
 utils/       receipt.js (คำนวณ VAT / เงินทอน เป็นสตางค์)
 customer/    MenuPage, CartPage (checkout), OrderStatusPage, CartContext
   components/  TopBar, CategoryTabs, MenuGrid, MenuCard, CartDrawer, OrderStepper
-staff/       OrdersPage, MenuAdminPage, LoginPage, RequireAuth, AuthContext
+staff/       OrdersPage, TablesPage, MenuAdminPage, DashboardPage, LoginPage, RequireAuth, AuthContext
   components/  StaffLayout, OrderBoard, OrderColumn, OrderCard, HistoryList, CancelModal, ...
 services/    api.js  (จุดเดียวที่เรียก backend)
 styles.css   Tailwind + design tokens (สีแบรนด์ ฟอนต์)

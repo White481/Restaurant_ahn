@@ -1,6 +1,6 @@
 # All About Food! — Restaurant Order Management System (Group 10)
 
-ระบบจัดการออเดอร์ร้านอาหาร: ลูกค้าสแกน QR ที่โต๊ะเพื่อสั่งอาหาร หรือจองโต๊ะล่วงหน้า ส่วนพนักงานจัดการออเดอร์และการจองตามหน้าที่ (ครัว / เสิร์ฟ / แคชเชียร์) และแอดมินจัดการเมนูและดูรายงานยอดขาย
+ระบบจัดการออเดอร์ร้านอาหาร: พนักงานเปิดโต๊ะเมื่อลูกค้านั่ง → ลูกค้าสแกน QR ที่โต๊ะเพื่อสั่งอาหาร → พนักงานจัดการออเดอร์ตามหน้าที่ (ครัว / เสิร์ฟ / แคชเชียร์) และแอดมินจัดการเมนูและดูรายงานยอดขาย
 
 - **Frontend:** React + Vite + Tailwind CSS · **Backend:** Node.js + Express · **Database:** MySQL 8
 - Live demo: https://restaurant-ahn-hclv.vercel.app (API: https://restaurant-ahn-1.onrender.com)
@@ -8,9 +8,9 @@
 ## Structure
 | Folder | หน้าที่ |
 |---|---|
-| `database/` | `schema.sql` (11 ตาราง), `triggers.sql`, `procedures.sql`, `seed.sql`, `migrations/` |
+| `database/` | `schema.sql` (7 ตาราง), `triggers.sql`, `procedures.sql`, `seed.sql`, `migrations/` |
 | `backend/` | REST API: `routes/` → `controllers/` → `models/` (SQL), `middleware/auth.js` (JWT + role), `config/permissions.js` (สิทธิ์ทั้งหมด) |
-| `frontend/` | `customer/` (สั่งอาหาร, ติดตามออเดอร์, จองโต๊ะ) และ `staff/` (กระดานออเดอร์, การจอง, จัดการเมนู, แดชบอร์ด) |
+| `frontend/` | `customer/` (ดูเมนู, สั่งอาหาร, ติดตามออเดอร์) และ `staff/` (กระดานออเดอร์, โต๊ะ, จัดการเมนู, แดชบอร์ด) |
 | `docs/` | [สรุประบบสำหรับทีม (PDF)](docs/system-overview.pdf), [ER diagram](docs/er-diagram.md), [demo test cases](docs/demo-test-cases.md) |
 
 ## Getting started (local)
@@ -21,7 +21,7 @@
    mysql -u root -p < database/procedures.sql
    mysql -u root -p < database/seed.sql
    ```
-   ฐานข้อมูลเดิมที่สร้างไว้แล้ว: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรัน (เรียงตามเลข)
+   ฐานข้อมูลเดิมที่สร้างไว้แล้ว: รันไฟล์ใน `database/migrations/` ที่ยังไม่เคยรัน (เรียงตามเลข) แล้วรัน `cd backend && npm run migrate` (ย้ายฐานข้อมูลเดิมให้ตรงกับ 7 ตาราง รันซ้ำได้) และรัน `database/triggers.sql` ใหม่
 2. Backend
    ```bash
    cd backend && npm install
@@ -33,21 +33,21 @@
    ```bash
    cd frontend && npm install && npm run dev   # http://localhost:5173
    ```
-4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (60 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
+4. ทดสอบทั้งระบบ: `cd backend && npm run test:e2e` (55 test cases ยิง API จริงแล้วคืนข้อมูลเดิมให้)
 
 ## Roles & permissions
 สิทธิ์ทั้งหมดอยู่ที่ [`backend/src/config/permissions.js`](backend/src/config/permissions.js) ที่เดียว backend ตรวจทุก request (JWT) ส่วน frontend ซ่อนปุ่มที่ role นั้นกดไม่ได้
 
 | ทำอะไร | ลูกค้า | chef | waiter | cashier | admin |
 |---|:-:|:-:|:-:|:-:|:-:|
-| ดูเมนู / สั่งอาหาร / ติดตามออเดอร์ตัวเอง / จองโต๊ะ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ดูเมนู / สั่งอาหาร (เฉพาะโต๊ะที่เปิดแล้ว) / ติดตามออเดอร์ตัวเอง | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ดูกระดานออเดอร์ | | ✓ | ✓ | ✓ | ✓ |
 | `placed → preparing → ready` (ครัว) | | ✓ | | | ✓ |
 | `ready → served` (เสิร์ฟ) | | | ✓ | | ✓ |
 | ยกเลิกออเดอร์ (ก่อนเสิร์ฟ) | | | ✓ | | ✓ |
 | รับชำระเงิน `served → completed` | | | ✓ | ✓ | ✓ |
-| จัดการการจอง (ยืนยัน / ลูกค้ามาถึง / ยกเลิก / ย้ายโต๊ะ) | | | ✓ | | ✓ |
-| ลบการจอง | | | | | ✓ |
+| เปิด / ปิดโต๊ะ | | | ✓ | | ✓ |
+| ปิดใช้งานโต๊ะ (inactive) | | | | | ✓ |
 | จัดการเมนู (CRUD) | | | | | ✓ |
 | แดชบอร์ด / รายงานยอดขาย / สต็อก | | | | | ✓ |
 
@@ -57,10 +57,8 @@
 | ประเภท | ชื่อ | ทำอะไร | เห็นผลที่ไหน |
 |---|---|---|---|
 | Trigger | `trg_order_item_bi_stock` | BEFORE INSERT `order_item`: ตัดสต็อกวัตถุดิบตามสูตร ถ้าไม่พอ `SIGNAL` ยกเลิกทั้งออเดอร์ | แดชบอร์ด → สต็อกวัตถุดิบ / ลูกค้าเห็น "Out of stock" |
-| Trigger | `trg_orders_ai_table` | AFTER INSERT `orders`: ออเดอร์ทานที่ร้าน → โต๊ะ (ว่างหรือจองไว้) เป็น `occupied` | แดชบอร์ด → สถานะโต๊ะ |
-| Trigger | `trg_orders_au_status` | AFTER UPDATE `orders`: ยกเลิก → คืนสต็อก, ออเดอร์จบครบ → โต๊ะกลับเป็น `available` | แดชบอร์ด |
-| Trigger | `trg_reservation_au_table` | AFTER UPDATE `reservation`: ยืนยันการจองของวันนี้ → โต๊ะเป็น `reserved`, ยกเลิก/ย้ายโต๊ะ → ปล่อยโต๊ะ | แดชบอร์ด → สถานะโต๊ะ |
-| Trigger | `trg_reservation_ad_table` | AFTER DELETE `reservation`: ลบการจองที่ยืนยันแล้วของวันนี้ → ปล่อยโต๊ะ | แดชบอร์ด |
+| Trigger | `trg_orders_bi_table_open` | BEFORE INSERT `orders`: โต๊ะยังไม่เปิด (ไม่ใช่ `occupied`) → `SIGNAL` ปฏิเสธ กันสั่งจากนอกร้าน | ลูกค้าเห็น "โต๊ะยังไม่เปิด" / INSERT ตรงใน Workbench แล้ว error |
+| Trigger | `trg_orders_au_status` | AFTER UPDATE `orders`: ยกเลิก → คืนสต็อก, ชำระเงินครบ → ปิดโต๊ะ (`available`) อัตโนมัติ | หน้าโต๊ะ / แดชบอร์ด |
 | Stored procedure | `sp_sales_summary(p_date)` | สรุปรายได้, ออเดอร์ที่ชำระ, ยอดเฉลี่ย, ยกเลิก, จำนวนจาน ของวันที่เลือก | แดชบอร์ด → เลือกวันที่ (`CALL` จาก `dashboardModel.js`) |
 
 > TiDB Cloud (ฐานข้อมูลของเว็บ demo) ไม่รองรับ trigger และ stored procedure: backend จะคำนวณยอดขายด้วย SQL query แทน และหน้าแดชบอร์ดบอกไว้ว่าใช้วิธีไหน ให้ demo ส่วนนี้กับ MySQL

@@ -9,7 +9,7 @@ function toPositiveInt(value) {
 }
 
 exports.createNewOrder = asyncHandler(async (req, res) => {
-    const { table_id, order_type, items, special_request, payment_method, session_id, customer_id } = req.body || {};
+    const { table_id, order_type, items, special_request, payment_method } = req.body || {};
 
     const tableId = toPositiveInt(table_id);
     if (tableId === null) throw new HttpError(400, 'table_id must be a positive integer');
@@ -18,7 +18,8 @@ exports.createNewOrder = asyncHandler(async (req, res) => {
         throw new HttpError(400, `order_type must be one of: ${orderModel.ORDER_TYPES.join(', ')}`);
     }
 
-    if (payment_method !== undefined && payment_method !== null && !orderModel.PAYMENT_METHODS.includes(payment_method)) {
+    // ไม่มี "จ่ายทีหลัง": ลูกค้าต้องเลือกวิธีจ่ายตั้งแต่ตอนสั่ง (พนักงานเปลี่ยนได้ตอนรับเงินจริง)
+    if (!orderModel.PAYMENT_METHODS.includes(payment_method)) {
         throw new HttpError(400, `payment_method must be one of: ${orderModel.PAYMENT_METHODS.join(', ')}`);
     }
 
@@ -45,11 +46,9 @@ exports.createNewOrder = asyncHandler(async (req, res) => {
         table_id: tableId,
         order_type,
         special_request: special_request || null,
-        payment_method: payment_method || null,
-        session_id: session_id ? toPositiveInt(session_id) : null,
-        customer_id: customer_id ? toPositiveInt(customer_id) : null,
-        // employee_id มาจาก token เท่านั้น (ถ้าพนักงาน login แล้วสั่งแทนลูกค้า) ไม่รับจาก body
-        employee_id: req.user ? req.user.employee_id : null
+        payment_method,
+        // staff_id มาจาก token เท่านั้น (ถ้าพนักงาน login แล้วสั่งแทนลูกค้า) ไม่รับจาก body
+        staff_id: req.user ? req.user.staff_id : null
     };
 
     const result = await orderModel.createOrder(orderData, cleanItems);
@@ -108,7 +107,7 @@ exports.getOrderStatus = asyncHandler(async (req, res) => {
 });
 
 // POST /api/orders/:id/pay  { payment_method: 'cash'|'card'|'qr', amount_received? (จำเป็นเมื่อเป็น cash) }
-const PAY_METHODS = ['cash', 'card', 'qr'];
+const PAY_METHODS = orderModel.PAYMENT_METHODS;
 exports.payOrder = asyncHandler(async (req, res) => {
     const id = toPositiveInt(req.params.id);
     if (id === null) throw new HttpError(400, 'Invalid order id');
@@ -131,7 +130,7 @@ exports.payOrder = asyncHandler(async (req, res) => {
     const result = await orderModel.payOrder(id, {
         payment_method,
         amount_received: received,
-        paid_by: req.user.employee_id // มาจาก token เท่านั้น
+        paid_by: req.user.staff_id // มาจาก token เท่านั้น
     });
     res.json({ message: 'Payment recorded', ...result });
 });

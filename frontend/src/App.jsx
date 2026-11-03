@@ -1,15 +1,14 @@
 import { Link, Route, Routes } from 'react-router-dom';
 import { buttonClasses } from './ui/Button.jsx';
-import { RESERVATION_ROLES } from './components/status.js';
+import { TABLE_ROLES } from './components/status.js';
 import MenuPage from './customer/MenuPage.jsx';
 import CartPage from './customer/CartPage.jsx';
 import OrderStatusPage from './customer/OrderStatusPage.jsx';
-import ReservePage from './customer/ReservePage.jsx';
 import LoginPage from './staff/LoginPage.jsx';
 import OrdersPage from './staff/OrdersPage.jsx';
 import MenuAdminPage from './staff/MenuAdminPage.jsx';
 import DashboardPage from './staff/DashboardPage.jsx';
-import ReservationsPage from './staff/ReservationsPage.jsx';
+import TablesPage from './staff/TablesPage.jsx';
 import RequireAuth from './staff/RequireAuth.jsx';
 import { useLang } from './i18n/LanguageContext.jsx';
 
@@ -36,7 +35,6 @@ export default function App() {
       <Route path="/" element={<MenuPage />} />
       <Route path="/cart" element={<CartPage />} />
       <Route path="/order/:id" element={<OrderStatusPage />} />
-      <Route path="/reserve" element={<ReservePage />} />
 
       {/* ฝั่งพนักงาน */}
       <Route path="/staff/login" element={<LoginPage />} />
@@ -57,10 +55,10 @@ export default function App() {
         }
       />
       <Route
-        path="/staff/reservations"
+        path="/staff/tables"
         element={
-          <RequireAuth roles={RESERVATION_ROLES}>
-            <ReservationsPage />
+          <RequireAuth roles={TABLE_ROLES}>
+            <TablesPage />
           </RequireAuth>
         }
       />

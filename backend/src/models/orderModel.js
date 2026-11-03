@@ -2,24 +2,29 @@ const db = require('../config/db');
 const { HttpError } = require('../middleware/errorHandler');
 
 exports.ORDER_TYPES = ['dine_in', 'take_away'];
-exports.PAYMENT_METHODS = ['cash', 'card', 'qr', 'other'];
+// วิธีจ่ายที่ร้านรับ (ใช้ทั้งตอนสั่งและตอนรับชำระเงิน) ENUM ใน DB ยังมี 'other' ไว้รองรับข้อมูลเก่า
+exports.PAYMENT_METHODS = ['cash', 'card', 'qr'];
 exports.VALID_STATUSES = ['placed', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
 
 exports.createOrder = async (orderData, items) => {
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
+        const { table_id, staff_id, order_type, special_request, payment_method } = orderData;
 
-        const { table_id, session_id, customer_id, employee_id, order_type, special_request, payment_method } = orderData;
-
-        const [tables] = await connection.execute('SELECT table_id FROM dining_table WHERE table_id = ?', [table_id]);
+        // ล็อกแถวโต๊ะไว้ระหว่างสั่ง กันพนักงานปิดโต๊ะพร้อมกับที่ลูกค้ากำลังสั่ง
+        const [tables] = await connection.execute('SELECT status FROM dining_table WHERE table_id = ? FOR UPDATE', [table_id]);
         if (tables.length === 0) throw new HttpError(400, `Table ${table_id} not found`);
+        // สั่งได้เฉพาะโต๊ะที่พนักงานเปิดแล้ว (trigger trg_orders_bi_table_open ตรวจซ้ำอีกชั้นใน MySQL)
+        if (tables[0].status !== 'occupied') {
+            throw new HttpError(409, 'This table is not open yet. Please ask staff to open the table.');
+        }
 
         // 1. สร้าง record ในตาราง orders
         const [orderResult] = await connection.execute(
-            `INSERT INTO orders (table_id, session_id, customer_id, employee_id, order_type, special_request, payment_method)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [table_id, session_id || null, customer_id || null, employee_id || null, order_type, special_request || null, payment_method || null]
+            `INSERT INTO orders (table_id, staff_id, order_type, special_request, payment_method)
+             VALUES (?, ?, ?, ?, ?)`,
+            [table_id, staff_id || null, order_type, special_request || null, payment_method || null]
         );
         const orderId = orderResult.insertId;
 
@@ -62,8 +67,8 @@ exports.createOrder = async (orderData, items) => {
 // status (optional): กรองตามสถานะ เช่น 'placed'
 exports.getAllOrders = async ({ status } = {}) => {
     // cashier_name = ชื่อพนักงานที่รับชำระเงิน (ใช้พิมพ์บนใบเสร็จ) ยังไม่ชำระ = NULL
-    const base = `SELECT o.*, NULLIF(CONCAT_WS(' ', e.first_name, e.last_name), '') AS cashier_name
-                  FROM orders o LEFT JOIN employee e ON e.employee_id = o.paid_by`;
+    const base = `SELECT o.*, NULLIF(CONCAT_WS(' ', s.first_name, s.last_name), '') AS cashier_name
+                  FROM orders o LEFT JOIN staff s ON s.staff_id = o.paid_by`;
     const [orders] = status
         ? await db.execute(`${base} WHERE o.status = ? ORDER BY o.order_id DESC`, [status])
         : await db.execute(`${base} ORDER BY o.order_id DESC`);

@@ -9,16 +9,15 @@ const PERMISSIONS = {
     payOrder: ['admin', 'cashier', 'waiter'],   // รับชำระเงิน + ปิดออเดอร์
     manageMenu: ['admin'],                      // เพิ่ม / แก้ / ลบ / ซ่อนเมนู
     viewDashboard: ['admin'],                   // รายงานยอดขาย + สต็อก
-    manageReservations: ['admin', 'waiter'],    // ดู / ยืนยัน / เช็คอิน / ยกเลิก / ย้ายโต๊ะ การจอง
-    deleteReservation: ['admin']                // ลบการจองทิ้งถาวร
+    manageTables: ['admin', 'waiter']           // ดูโต๊ะ + เปิด/ปิดโต๊ะ
 };
 
-// การเปลี่ยนสถานะการจอง: pending = รอยืนยัน, confirmed = ยืนยันแล้ว, completed = ลูกค้ามาถึงแล้ว
-const RESERVATION_TRANSITIONS = {
-    pending: { confirmed: PERMISSIONS.manageReservations, cancelled: PERMISSIONS.manageReservations },
-    confirmed: { completed: PERMISSIONS.manageReservations, cancelled: PERMISSIONS.manageReservations },
-    completed: {},
-    cancelled: {}
+// การเปลี่ยนสถานะโต๊ะ: ลูกค้าสั่งอาหารได้เฉพาะโต๊ะที่ occupied (พนักงานเปิดโต๊ะให้แล้ว)
+// ปิดโต๊ะ (occupied -> available) ทำได้เมื่อไม่มีออเดอร์ค้าง / ชำระเงินครบแล้ว trigger ปิดให้เอง
+const TABLE_TRANSITIONS = {
+    available: { occupied: PERMISSIONS.manageTables, inactive: ['admin'] },
+    occupied: { available: PERMISSIONS.manageTables },
+    inactive: { available: ['admin'] }
 };
 
 // การเปลี่ยนสถานะออเดอร์: { สถานะปัจจุบัน: { สถานะถัดไป: [role ที่ทำได้] } }
@@ -33,7 +32,7 @@ const ORDER_TRANSITIONS = {
 };
 
 // คืน null ถ้าเปลี่ยนได้ หรือ { status, message } ถ้าเปลี่ยนไม่ได้
-// table = ORDER_TRANSITIONS (ค่าเริ่มต้น) หรือ RESERVATION_TRANSITIONS
+// table = ORDER_TRANSITIONS (ค่าเริ่มต้น) หรือ TABLE_TRANSITIONS
 function checkTransition(role, from, to, table = ORDER_TRANSITIONS, label = 'order') {
     const allowedRoles = (table[from] || {})[to];
     if (!allowedRoles) {
@@ -45,4 +44,4 @@ function checkTransition(role, from, to, table = ORDER_TRANSITIONS, label = 'ord
     return null;
 }
 
-module.exports = { ROLES, PERMISSIONS, ORDER_TRANSITIONS, RESERVATION_TRANSITIONS, checkTransition };
+module.exports = { ROLES, PERMISSIONS, ORDER_TRANSITIONS, TABLE_TRANSITIONS, checkTransition };

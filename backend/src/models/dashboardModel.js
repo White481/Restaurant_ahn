@@ -107,15 +107,9 @@ exports.getIngredientStock = async () => {
     return rows;
 };
 
-// จำนวนลูกค้าทั้งหมด
-exports.getTotalCustomers = async () => {
-    const [rows] = await db.query('SELECT COUNT(*) AS count FROM customer');
-    return rows[0].count;
-};
-
 // จำนวนพนักงานทั้งหมด
 exports.getTotalEmployees = async () => {
-    const [rows] = await db.query('SELECT COUNT(*) AS count FROM employee');
+    const [rows] = await db.query('SELECT COUNT(*) AS count FROM staff');
     return rows[0].count;
 };
 
@@ -125,10 +119,10 @@ exports.getRecentOrders = async (limit = 10) => {
         `SELECT o.order_id, o.table_id, o.order_type, o.status,
                 o.total_price, o.order_date, o.payment_method,
                 t.table_number,
-                NULLIF(CONCAT_WS(' ', e.first_name, e.last_name), '') AS employee_name
+                NULLIF(CONCAT_WS(' ', s.first_name, s.last_name), '') AS employee_name
          FROM orders o
          LEFT JOIN dining_table t ON t.table_id = o.table_id
-         LEFT JOIN employee e ON e.employee_id = o.employee_id
+         LEFT JOIN staff s ON s.staff_id = o.staff_id
          ORDER BY o.order_date DESC
          LIMIT ?`,
         [limit]

@@ -25,7 +25,7 @@ async function main() {
     if (password.length < 8) throw new Error('Password must be at least 8 characters');
 
     const hash = await bcrypt.hash(password, 10);
-    const [result] = await db.execute('UPDATE sys_user SET password_hash = ? WHERE username = ?', [hash, username]);
+    const [result] = await db.execute('UPDATE staff SET password_hash = ? WHERE username = ?', [hash, username]);
     if (result.affectedRows === 0) throw new Error(`User ${username} not found`);
 
     console.log(`Password updated for ${username}`);

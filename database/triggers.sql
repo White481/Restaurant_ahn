@@ -7,8 +7,10 @@
 USE restaurant_oms;
 
 DROP TRIGGER IF EXISTS trg_order_item_bi_stock;
-DROP TRIGGER IF EXISTS trg_orders_ai_table;
+DROP TRIGGER IF EXISTS trg_orders_bi_table_open;
 DROP TRIGGER IF EXISTS trg_orders_au_status;
+-- trigger เก่าที่เลิกใช้แล้ว (ระบบจองโต๊ะถูกตัดออก / โต๊ะเปิดโดยพนักงานแทน)
+DROP TRIGGER IF EXISTS trg_orders_ai_table;
 DROP TRIGGER IF EXISTS trg_reservation_au_table;
 DROP TRIGGER IF EXISTS trg_reservation_ad_table;
 
@@ -43,22 +45,25 @@ BEGIN
 END$$
 
 -- ---------------------------------------------------------------------
--- 2) ออเดอร์ทานที่ร้านเข้ามา -> โต๊ะเปลี่ยนเป็น "occupied" อัตโนมัติ (รวมโต๊ะที่จองไว้แล้วลูกค้ามานั่ง)
+-- 2) สั่งอาหารได้เฉพาะโต๊ะที่พนักงาน "เปิดโต๊ะ" แล้ว (status = occupied)
+--    กันคนเอาลิงก์ QR กลับไปสั่งจากบ้าน หรือพิมพ์เลขโต๊ะอื่นเอง
+--    backend ตรวจซ้ำอีกชั้น (ข้อความ error ชัดกว่า และใช้ได้กับ DB ที่ไม่มี trigger)
 -- ---------------------------------------------------------------------
-CREATE TRIGGER trg_orders_ai_table
-AFTER INSERT ON orders
+CREATE TRIGGER trg_orders_bi_table_open
+BEFORE INSERT ON orders
 FOR EACH ROW
 BEGIN
-  IF NEW.order_type = 'dine_in' THEN
-    UPDATE dining_table SET status = 'occupied'
-    WHERE table_id = NEW.table_id AND status IN ('available', 'reserved');
+  IF NOT EXISTS (
+    SELECT 1 FROM dining_table WHERE table_id = NEW.table_id AND status = 'occupied'
+  ) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Table is not open: please ask staff to open the table first';
   END IF;
 END$$
 
 -- ---------------------------------------------------------------------
--- 3) เมื่อออเดอร์จบ (completed / cancelled)
---    - ยกเลิก: คืนสต็อกวัตถุดิบที่ถูกตัดไปตอนสั่ง
---    - โต๊ะไม่มีออเดอร์ที่ยังไม่จบเหลืออยู่แล้ว -> โต๊ะกลับเป็น "available"
+-- 3) เมื่อสถานะออเดอร์เปลี่ยน
+--    - ยกเลิก: คืนสต็อกวัตถุดิบที่ถูกตัดไปตอนสั่ง (โต๊ะยังเปิดอยู่ ลูกค้าสั่งใหม่ได้)
+--    - ชำระเงินแล้ว (completed) และโต๊ะไม่มีออเดอร์ค้าง -> ปิดโต๊ะอัตโนมัติ (available)
 -- ---------------------------------------------------------------------
 CREATE TRIGGER trg_orders_au_status
 AFTER UPDATE ON orders
@@ -76,7 +81,7 @@ BEGIN
     SET i.quantity_in_stock = i.quantity_in_stock + used.qty;
   END IF;
 
-  IF NEW.status IN ('completed', 'cancelled') AND OLD.status NOT IN ('completed', 'cancelled') THEN
+  IF NEW.status = 'completed' AND OLD.status <> 'completed' THEN
     UPDATE dining_table t
     SET t.status = 'available'
     WHERE t.table_id = NEW.table_id
@@ -86,54 +91,6 @@ BEGIN
         WHERE o.table_id = NEW.table_id
           AND o.order_id <> NEW.order_id
           AND o.status NOT IN ('completed', 'cancelled')
-      );
-  END IF;
-END$$
-
--- ---------------------------------------------------------------------
--- 4) การจองโต๊ะของ "วันนี้"
---    - ยืนยันการจอง -> โต๊ะเป็น "reserved"
---    - ยกเลิก / ย้ายโต๊ะ / เลื่อนวัน -> โต๊ะเดิมกลับเป็น "available" (ถ้าไม่มีการจองที่ยืนยันแล้วอื่นของวันนี้)
---    - ลูกค้ามาถึง (completed) -> โต๊ะยังเป็น reserved จนสั่งอาหาร แล้ว trigger ข้อ 2 เปลี่ยนเป็น occupied
--- ---------------------------------------------------------------------
-CREATE TRIGGER trg_reservation_au_table
-AFTER UPDATE ON reservation
-FOR EACH ROW
-BEGIN
-  IF OLD.status = 'confirmed' AND OLD.reservation_date = CURDATE()
-     AND (NEW.status = 'cancelled' OR NEW.table_id <> OLD.table_id OR NEW.reservation_date <> OLD.reservation_date) THEN
-    UPDATE dining_table t
-    SET t.status = 'available'
-    WHERE t.table_id = OLD.table_id
-      AND t.status = 'reserved'
-      AND NOT EXISTS (
-        SELECT 1 FROM reservation r
-        WHERE r.table_id = OLD.table_id
-          AND r.reservation_id <> NEW.reservation_id
-          AND r.status = 'confirmed'
-          AND r.reservation_date = CURDATE()
-      );
-  END IF;
-
-  IF NEW.status = 'confirmed' AND NEW.reservation_date = CURDATE() THEN
-    UPDATE dining_table SET status = 'reserved'
-    WHERE table_id = NEW.table_id AND status = 'available';
-  END IF;
-END$$
-
--- 5) ลบการจองที่ยืนยันแล้วของวันนี้ -> ปล่อยโต๊ะ (แบบเดียวกับยกเลิก)
-CREATE TRIGGER trg_reservation_ad_table
-AFTER DELETE ON reservation
-FOR EACH ROW
-BEGIN
-  IF OLD.status = 'confirmed' AND OLD.reservation_date = CURDATE() THEN
-    UPDATE dining_table t
-    SET t.status = 'available'
-    WHERE t.table_id = OLD.table_id
-      AND t.status = 'reserved'
-      AND NOT EXISTS (
-        SELECT 1 FROM reservation r
-        WHERE r.table_id = OLD.table_id AND r.status = 'confirmed' AND r.reservation_date = CURDATE()
       );
   END IF;
 END$$
