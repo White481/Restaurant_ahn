@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { formatBaht } from '../components/status.js';
@@ -49,13 +49,26 @@ function Segmented({ legend, name, value, options, onChange }) {
 export default function CartPage() {
   const navigate = useNavigate();
   const { lang, t } = useLang();
-  const { items, tableId, setTableId, setQuantity, clear, totalPrice, totalQty } = useCart();
+  const { items, tableId, setQuantity, clear, totalPrice, totalQty } = useCart();
   const [orderType, setOrderType] = useState('dine_in');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [note, setNote] = useState('');
-  const [tableInput, setTableInput] = useState('');
+  const [tableOpen, setTableOpen] = useState(null); // null = ยังไม่รู้ / true / false
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // เช็กว่าพนักงานเปิดโต๊ะแล้วหรือยัง (backend + trigger ตรวจซ้ำตอนสั่งจริงอยู่ดี)
+  useEffect(() => {
+    if (!tableId) return undefined;
+    let active = true;
+    api
+      .getTable(tableId)
+      .then((table) => active && setTableOpen(table.status === 'occupied'))
+      .catch(() => active && setTableOpen(null));
+    return () => {
+      active = false;
+    };
+  }, [tableId]);
 
   if (items.length === 0) {
     return (
@@ -70,18 +83,17 @@ export default function CartPage() {
     );
   }
 
-  const effectiveTable = tableId || Number.parseInt(tableInput, 10) || null;
-
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
-    if (!effectiveTable) {
+    // สั่งได้เฉพาะเมื่อสแกน QR ที่โต๊ะ (ไม่มีช่องพิมพ์เลขโต๊ะเอง)
+    if (!tableId) {
       setError(t('checkout.needTable'));
       return;
     }
 
     const payload = {
-      table_id: effectiveTable,
+      table_id: tableId,
       order_type: orderType,
       payment_method: paymentMethod,
       items: items.map(({ menu_item_id, quantity }) => ({ menu_item_id, quantity }))
@@ -91,7 +103,6 @@ export default function CartPage() {
     setSubmitting(true); // กันกดซ้ำจนได้ออเดอร์สองใบ
     try {
       const result = await api.createOrder(payload);
-      if (!tableId) setTableId(effectiveTable);
       clear();
       navigate(`/order/${result.order_id}`, { replace: true });
     } catch (e) {
@@ -149,18 +160,16 @@ export default function CartPage() {
             <strong className="font-display text-lg">{t('top.table', { n: tableId })}</strong>
           </p>
         ) : (
-          <label className={labelClass}>
-            {t('checkout.tableNo')}
-            <input
-              type="number"
-              min="1"
-              inputMode="numeric"
-              value={tableInput}
-              onChange={(e) => setTableInput(e.target.value)}
-              placeholder={t('checkout.tablePh')}
-              className={inputClass}
-            />
-          </label>
+          <p role="status" className="flex items-start gap-2 rounded-lg bg-turmeric-100 px-3 py-2.5 text-sm font-medium text-turmeric-700">
+            <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
+            {t('checkout.needTable')}
+          </p>
+        )}
+        {tableId && tableOpen === false && (
+          <p role="status" className="flex items-start gap-2 rounded-lg bg-turmeric-100 px-3 py-2.5 text-sm font-medium text-turmeric-700">
+            <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
+            {t('checkout.tableClosed')}
+          </p>
         )}
 
         <Segmented
@@ -202,7 +211,7 @@ export default function CartPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" disabled={submitting} className="w-full uppercase tracking-[0.06em]">
+        <Button type="submit" size="lg" disabled={submitting || !tableId} className="w-full uppercase tracking-[0.06em]">
           {submitting ? t('checkout.submitting') : t('checkout.submit')}
         </Button>
       </form>

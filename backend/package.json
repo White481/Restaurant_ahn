@@ -8,7 +8,7 @@
     "seed:users": "node scripts/seedUsers.js",
     "set:password": "node scripts/setPassword.js",
     "test:e2e": "node tests/e2e.js",
-    "migrate:8tables": "node scripts/migrate8Tables.js"
+    "migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

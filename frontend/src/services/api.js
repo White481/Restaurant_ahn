@@ -67,15 +67,12 @@ export const api = {
   // รับชำระเงิน + ปิดออเดอร์ { payment_method: 'cash'|'card'|'qr', amount_received (เฉพาะ cash) }
   payOrder: (id, body) => request(`/api/orders/${id}/pay`, { method: 'POST', body, auth: true }),
 
-  // แดชบอร์ดสำหรับ admin: สรุปยอดรายได้ ออเดอร์ เมนูขายดี สถานะโต๊ะ ฯลฯ
-  // ระบบจองโต๊ะ: ลูกค้าจองได้โดยไม่ login ส่วนที่เหลือเป็นของพนักงาน (admin / waiter, ลบได้เฉพาะ admin)
-  createReservation: (body) => request('/api/reservations', { method: 'POST', body }),
-  getReservations: (date) => request(`/api/reservations?date=${encodeURIComponent(date)}`, { auth: true }),
-  getReservationTables: () => request('/api/reservations/tables', { auth: true }),
-  updateReservationStatus: (id, status) => request(`/api/reservations/${id}/status`, { method: 'PATCH', body: { status }, auth: true }),
-  updateReservation: (id, body) => request(`/api/reservations/${id}`, { method: 'PUT', body, auth: true }),
-  deleteReservation: (id) => request(`/api/reservations/${id}`, { method: 'DELETE', auth: true }),
+  // โต๊ะ: ลูกค้าเช็กว่าโต๊ะเปิดหรือยัง / พนักงานเปิด-ปิดโต๊ะ
+  getTable: (id) => request(`/api/tables/${id}`),
+  getTables: () => request('/api/tables', { auth: true }),
+  updateTableStatus: (id, status) => request(`/api/tables/${id}/status`, { method: 'PATCH', body: { status }, auth: true }),
 
+  // แดชบอร์ดสำหรับ admin: สรุปยอดรายได้ ออเดอร์ เมนูขายดี สถานะโต๊ะ ฯลฯ
   // date = 'YYYY-MM-DD' (ไม่ใส่ = วันนี้) ยอดขายมาจาก stored procedure sp_sales_summary
   getDashboardStats: (date) => request(`/api/dashboard${date ? `?date=${encodeURIComponent(date)}` : ''}`, { auth: true })
 };

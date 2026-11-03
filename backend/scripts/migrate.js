@@ -1,15 +1,16 @@
 /**
- * Migration 004: ลดฐานข้อมูลที่มีข้อมูลอยู่แล้วจาก 11 ตารางเหลือ 8 ตาราง (ข้อมูลเดิมไม่หาย)
- *   - employee + sys_user  -> staff        (staff_id = employee_id เดิม, ออเดอร์เก่ายังชี้คนเดิม)
- *   - customer             -> reservation.customer_name / reservation.phone
- *   - table_session        -> ลบ (ไม่มีโค้ดใช้)
+ * Migration 004: ย้ายฐานข้อมูลเดิม (11 ตาราง) ให้ตรงกับ schema.sql ปัจจุบัน (7 ตาราง)
+ *   - employee + sys_user  -> staff        (staff_id = employee_id เดิม, ออเดอร์เก่ายังชี้คนเดิม, ข้อมูลไม่หาย)
  *   - orders: employee_id -> staff_id, ลบ session_id / customer_id
+ *   - ลบ table_session (ไม่มีโค้ดใช้), customer และ reservation (ตัดระบบจองโต๊ะออก: การจองเดิมถูกลบ)
+ *   - dining_table.status: ตัด 'reserved' ออก (โต๊ะที่จองไว้ -> available)
+ *   - ลบ trigger ของระบบเก่า (MySQL) แล้วให้รัน database/triggers.sql ใหม่หลังสคริปต์นี้
  *
  * ใช้สคริปต์แทนไฟล์ .sql เพราะต้องเช็กก่อนว่าตาราง/คอลัมน์/FK มีอยู่ไหม (TiDB ไม่มี stored procedure)
  * จึงรันซ้ำได้อย่างปลอดภัย และใช้ได้ทั้ง MySQL 8 และ TiDB Cloud
  * ฐานข้อมูลที่สร้างใหม่จาก schema.sql ล่าสุดไม่ต้องรันสคริปต์นี้
  *
- * วิธีใช้ (ในโฟลเดอร์ backend): npm run migrate:8tables
+ * วิธีใช้ (ในโฟลเดอร์ backend): npm run migrate   แล้ว (MySQL เท่านั้น) รัน database/triggers.sql ใหม่
  * กับ TiDB: ตั้ง DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME / DB_SSL=true ก่อนรัน
  */
 require('dotenv').config();
@@ -23,8 +24,6 @@ const hasColumn = (t, c) => exists(
 const hasForeignKey = (t, name) => exists(
     `SELECT COUNT(*) n FROM information_schema.table_constraints
      WHERE table_schema = DATABASE() AND table_name = ? AND constraint_name = ? AND constraint_type = 'FOREIGN KEY'`, [t, name]);
-const hasIndex = (t, name) => exists(
-    'SELECT COUNT(*) n FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?', [t, name]);
 
 async function run(label, sql, params) {
     await db.query(sql, params);
@@ -95,31 +94,25 @@ async function main() {
             FOREIGN KEY (paid_by) REFERENCES staff(staff_id) ON DELETE SET NULL ON UPDATE CASCADE`);
     }
 
-    // ---------- 3) reservation ----------
-    if (!(await hasColumn('reservation', 'customer_name'))) {
-        await run('add reservation.customer_name / phone', `ALTER TABLE reservation
-            ADD COLUMN customer_name VARCHAR(100) NULL AFTER reservation_id,
-            ADD COLUMN phone VARCHAR(15) NULL AFTER customer_name`);
+    // ---------- 3) ตัดระบบจองโต๊ะ ----------
+    // trigger ของการจอง / ตัวเก่าที่เปลี่ยนโต๊ะเป็น occupied เอง (TiDB ไม่มี trigger: ข้ามไป)
+    for (const trg of ['trg_reservation_au_table', 'trg_reservation_ad_table', 'trg_orders_ai_table']) {
+        try {
+            await run(`drop trigger ${trg} (if exists)`, `DROP TRIGGER IF EXISTS ${trg}`);
+        } catch (err) {
+            console.log(`skip  drop trigger ${trg} (${err.code || err.message})`);
+        }
     }
-    if (await hasColumn('reservation', 'customer_id') && await hasTable('customer')) {
-        await run('copy customer -> reservation', `
-            UPDATE reservation r JOIN customer c ON c.customer_id = r.customer_id
-            SET r.customer_name = LEFT(CONCAT_WS(' ', c.first_name, c.last_name), 100), r.phone = c.phone
-            WHERE r.customer_name IS NULL`);
+    if (await hasTable('reservation')) {
+        const [[{ n }]] = await db.query('SELECT COUNT(*) n FROM reservation');
+        console.log(`note  reservation has ${n} row(s); they are removed with the table`);
     }
-    await run('fill empty name / phone', `
-        UPDATE reservation SET customer_name = COALESCE(NULLIF(customer_name, ''), '-'), phone = COALESCE(NULLIF(phone, ''), '-')
-        WHERE customer_name IS NULL OR customer_name = '' OR phone IS NULL OR phone = ''`);
-    await run('reservation name / phone NOT NULL', `ALTER TABLE reservation
-        MODIFY customer_name VARCHAR(100) NOT NULL, MODIFY phone VARCHAR(15) NOT NULL`);
-    await dropForeignKey('reservation', 'fk_reservation_customer');
-    await dropColumn('reservation', 'customer_id');
-    if (!(await hasIndex('reservation', 'idx_reservation_phone'))) {
-        await run('index reservation.phone', 'CREATE INDEX idx_reservation_phone ON reservation(phone)');
-    }
+    await run('reserved tables -> available', "UPDATE dining_table SET status = 'available' WHERE status = 'reserved'");
+    await run('dining_table.status without reserved', `ALTER TABLE dining_table
+        MODIFY status ENUM('available', 'occupied', 'inactive') NOT NULL DEFAULT 'available'`);
 
     // ---------- 4) ลบตารางเก่า (ลูกก่อนแม่) ----------
-    for (const t of ['table_session', 'sys_user', 'customer', 'employee']) {
+    for (const t of ['reservation', 'table_session', 'sys_user', 'customer', 'employee']) {
         if (await hasTable(t)) await run(`drop table ${t}`, `DROP TABLE ${t}`);
     }
 

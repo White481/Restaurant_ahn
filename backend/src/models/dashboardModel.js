@@ -107,12 +107,6 @@ exports.getIngredientStock = async () => {
     return rows;
 };
 
-// จำนวนลูกค้าทั้งหมด
-exports.getTotalCustomers = async () => {
-    const [rows] = await db.query('SELECT COUNT(DISTINCT phone) AS count FROM reservation');
-    return rows[0].count;
-};
-
 // จำนวนพนักงานทั้งหมด
 exports.getTotalEmployees = async () => {
     const [rows] = await db.query('SELECT COUNT(*) AS count FROM staff');

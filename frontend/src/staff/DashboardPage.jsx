@@ -22,7 +22,6 @@ const ALL_STATUSES = ['placed', 'preparing', 'ready', 'served', 'completed', 'ca
 const TABLE_STATUSES = [
   { key: 'available', dot: 'bg-sage-500' },
   { key: 'occupied', dot: 'bg-brand-500' },
-  { key: 'reserved', dot: 'bg-turmeric-500' },
   { key: 'inactive', dot: 'bg-stone-400' }
 ];
 
@@ -198,7 +197,6 @@ export default function DashboardPage() {
                 </ul>
                 <dl className="mt-4 flex flex-col gap-1.5 border-t border-dashed border-stone-300 pt-3 text-sm dark:border-stone-700">
                   {[
-                    [t('dash.totalCustomers'), stats.total_customers],
                     [t('dash.totalEmployees'), stats.total_employees],
                     [t('dash.totalTables'), tableTotal]
                   ].map(([label, value]) => (

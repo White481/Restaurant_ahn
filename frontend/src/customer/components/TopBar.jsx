@@ -1,6 +1,4 @@
-import { Link } from 'react-router-dom';
 import LangSwitch from '../../components/LangSwitch.jsx';
-import Icon from '../../ui/Icon.jsx';
 import ModeSwitch from '../../components/ModeSwitch.jsx';
 import Wordmark from '../../ui/Wordmark.jsx';
 import { useLang } from '../../i18n/LanguageContext.jsx';
@@ -15,10 +13,6 @@ export default function TopBar({ tableId }) {
         <Wordmark />
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <span className="eyebrow">{t('top.tagline')}</span>
-          <Link to="/reserve" className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 underline-offset-2 hover:underline">
-            <Icon name="calendar" className="size-3.5" />
-            {t('top.reserve')}
-          </Link>
           {tableId === null && (
             <span className="rounded border border-chili-500/50 px-1.5 py-px text-[11px] font-bold text-chili-700">{t('top.noTable')}</span>
           )}

@@ -14,13 +14,12 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
     }
     const date = rawDate || todayInShop();
 
-    const [sales, ordersByStatus, topItems, tableStats, ingredients, totalCustomers, totalEmployees, recentOrders] = await Promise.all([
+    const [sales, ordersByStatus, topItems, tableStats, ingredients, totalEmployees, recentOrders] = await Promise.all([
         dashboardModel.getSalesSummary(date),
         dashboardModel.getOrderCountByStatus(date),
         dashboardModel.getTopSellingItems(date, 5),
         dashboardModel.getTableStats(),
         dashboardModel.getIngredientStock(),
-        dashboardModel.getTotalCustomers(),
         dashboardModel.getTotalEmployees(),
         dashboardModel.getRecentOrders(10)
     ]);
@@ -32,7 +31,6 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
         top_items: topItems,
         table_stats: tableStats,
         ingredients,
-        total_customers: totalCustomers,
         total_employees: totalEmployees,
         recent_orders: recentOrders
     });

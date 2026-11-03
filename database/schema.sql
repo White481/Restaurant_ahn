@@ -1,6 +1,6 @@
 -- =====================================================================
 -- Restaurant Order Management System - Physical Schema (MySQL 8+)
--- Group 10 · 8 tables
+-- Group 10 · 7 tables
 -- Source: docs/ ER Diagram + Database Design (see docs/er-diagram.png)
 -- =====================================================================
 
@@ -10,11 +10,12 @@ USE restaurant_oms;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ตารางเก่าก่อนลดเหลือ 8 ตาราง (ลบทิ้งถ้ายังค้างอยู่)
+-- ตารางเก่าที่เลิกใช้แล้ว (ลบทิ้งถ้ายังค้างอยู่)
 DROP TABLE IF EXISTS table_session;
 DROP TABLE IF EXISTS sys_user;
 DROP TABLE IF EXISTS employee;
 DROP TABLE IF EXISTS customer;
+DROP TABLE IF EXISTS reservation;
 
 -- ---------------------------------------------------------------------
 -- staff  (พนักงาน + บัญชี login รวมเป็นตารางเดียว: พนักงานทุกคนต้อง login เข้าระบบ)
@@ -40,27 +41,9 @@ CREATE TABLE dining_table (
   table_id      INT AUTO_INCREMENT PRIMARY KEY,
   table_number  VARCHAR(10) NOT NULL UNIQUE,
   capacity      INT,
-  status        ENUM('available', 'occupied', 'reserved', 'inactive')
+  -- available = ว่าง (ลูกค้าสั่งไม่ได้) / occupied = พนักงานเปิดโต๊ะแล้ว (สั่งได้) / inactive = ปิดใช้งาน
+  status        ENUM('available', 'occupied', 'inactive')
                   NOT NULL DEFAULT 'available'
-) ENGINE=InnoDB;
-
--- ---------------------------------------------------------------------
--- reservation  (ชื่อ + เบอร์ผู้จองเก็บในการจองเลย: ร้านไม่มีระบบสมาชิกลูกค้า)
--- ---------------------------------------------------------------------
-DROP TABLE IF EXISTS reservation;
-CREATE TABLE reservation (
-  reservation_id    INT AUTO_INCREMENT PRIMARY KEY,
-  customer_name     VARCHAR(100) NOT NULL,
-  phone             VARCHAR(15) NOT NULL,
-  table_id          INT NOT NULL,
-  reservation_date  DATE NOT NULL,
-  reservation_time  TIME NOT NULL,
-  party_size        INT,
-  status            ENUM('pending', 'confirmed', 'cancelled', 'completed')
-                      NOT NULL DEFAULT 'pending',
-  CONSTRAINT fk_reservation_table
-    FOREIGN KEY (table_id) REFERENCES dining_table(table_id)
-    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -159,7 +142,5 @@ CREATE TABLE order_item (
 CREATE INDEX idx_orders_status      ON orders(status);
 CREATE INDEX idx_orders_order_date  ON orders(order_date);
 CREATE INDEX idx_ingredient_stock   ON ingredient(quantity_in_stock);
-CREATE INDEX idx_reservation_date   ON reservation(reservation_date);
-CREATE INDEX idx_reservation_phone  ON reservation(phone);
 
 SET FOREIGN_KEY_CHECKS = 1;

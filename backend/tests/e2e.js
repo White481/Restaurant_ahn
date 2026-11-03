@@ -1,9 +1,9 @@
 /**
  * Test cases ทั้งระบบ (ใช้ตอน demo): ยิง API จริงกับฐานข้อมูลจริง แล้วคืนข้อมูลเดิมให้ทั้งหมด
  *   - Access control: 4 role + ลูกค้า, ขั้นการเปลี่ยนสถานะ
- *   - Triggers: ตัดสต็อก / คืนสต็อก / โต๊ะ occupied-available / ปฏิเสธเมื่อของไม่พอ
+ *   - เปิด/ปิดโต๊ะ: สั่งได้เฉพาะโต๊ะที่พนักงานเปิด (backend + trigger), ปิดไม่ได้ถ้ายังมีออเดอร์ค้าง
+ *   - Triggers: ตัดสต็อก / คืนสต็อก / ปิดโต๊ะหลังชำระเงิน / ปฏิเสธเมื่อของไม่พอหรือโต๊ะยังไม่เปิด
  *   - CRUD เมนู, Stored procedure บน dashboard
- *   - ระบบจองโต๊ะ: หาโต๊ะอัตโนมัติ, กันจองซ้อน, trigger โต๊ะ reserved, สิทธิ์ของแต่ละ role
  *
  * วิธีใช้ (ในโฟลเดอร์ backend, ต้องรัน schema + triggers + procedures + seed แล้ว):
  *   npm run test:e2e
@@ -23,7 +23,6 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
   const [tablesBefore] = await db.query('SELECT table_id, status FROM dining_table');
   const [[{ maxOrder }]] = await db.query('SELECT COALESCE(MAX(order_id),0) maxOrder FROM orders');
   const [[{ maxMenu }]] = await db.query('SELECT COALESCE(MAX(menu_item_id),0) maxMenu FROM menu_item');
-  const [[{ maxResv }]] = await db.query('SELECT COALESCE(MAX(reservation_id),0) maxResv FROM reservation');
   const server = app.listen(3101);
   const B = 'http://localhost:3101/api';
   const call = async (method, url, body, token) => {
@@ -46,9 +45,26 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('chef -> dashboard 403', (await call('GET', '/dashboard', null, tok.chef)).status === 403);
     check('waiter -> create menu 403', (await call('POST', '/menus', { item_name: 'x', price: 1 }, tok.waiter)).status === 403);
 
-    // ---------- trigger: ตัดสต็อก + โต๊ะ occupied ----------
+    // ---------- เปิด/ปิดโต๊ะ: ลูกค้าสั่งได้เฉพาะโต๊ะที่พนักงานเปิดแล้ว ----------
+    await db.query("UPDATE dining_table SET status='available'");
+    const closedOrder = await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', payment_method: 'cash', items: [{ menu_item_id: 1, quantity: 1 }] });
+    check('order on a closed table -> 409', closedOrder.status === 409, JSON.stringify(closedOrder.data));
+    let sqlError = null;
+    try { await db.query("INSERT INTO orders (table_id, order_type) VALUES (2, 'dine_in')"); } catch (e) { sqlError = e; }
+    check('trigger: direct INSERT on closed table rejected (SIGNAL)', sqlError && sqlError.sqlState === '45000', sqlError && sqlError.sqlMessage);
+    const pub = await call('GET', '/tables/2');
+    check('customer reads table status (no login)', pub.status === 200 && pub.data.status === 'available' && pub.data.capacity === undefined);
+    check('chef list tables -> 403', (await call('GET', '/tables', null, tok.chef)).status === 403);
+    check('chef open table -> 403', (await call('PATCH', '/tables/2/status', { status: 'occupied' }, tok.chef)).status === 403);
+    check('waiter opens table 2 -> 200', (await call('PATCH', '/tables/2/status', { status: 'occupied' }, tok.waiter)).status === 200);
+    check('open an open table -> 409', (await call('PATCH', '/tables/2/status', { status: 'occupied' }, tok.waiter)).status === 409);
+    check('waiter set inactive -> 403 (admin only)', (await call('PATCH', '/tables/5/status', { status: 'inactive' }, tok.waiter)).status === 403);
+    check('admin set inactive -> 200', (await call('PATCH', '/tables/5/status', { status: 'inactive' }, tok.admin)).status === 200);
+    check('bad table status -> 400', (await call('PATCH', '/tables/5/status', { status: 'reserved' }, tok.admin)).status === 400);
+    for (const id of [1, 3, 4]) await call('PATCH', `/tables/${id}/status`, { status: 'occupied' }, tok.waiter);
+
+    // ---------- trigger: ตัดสต็อก ----------
     const pork0 = await stock('หมูสับ'), egg0 = await stock('ไข่ไก่');
-    await db.query("UPDATE dining_table SET status='available' WHERE table_id=2");
     const o1 = await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', payment_method: 'cash', items: [{ menu_item_id: 1, quantity: 2 }] });
     check('customer creates order', o1.status === 201, JSON.stringify(o1.data));
     check('order without payment method -> 400', (await call('POST', '/orders', { table_id: 2, order_type: 'dine_in', items: [{ menu_item_id: 1, quantity: 1 }] })).status === 400);
@@ -56,7 +72,9 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     const id1 = o1.data.order_id;
     check('trigger: pork -200g', pork0 - (await stock('หมูสับ')) === 200, `${pork0} -> ${await stock('หมูสับ')}`);
     check('trigger: egg -2', egg0 - (await stock('ไข่ไก่')) === 2);
-    check('trigger: table 2 occupied', (await tableStatus(2)) === 'occupied');
+    const tables = await call('GET', '/tables', null, tok.waiter);
+    check('waiter sees active orders per table', tables.status === 200 && tables.data.find((x) => x.table_id === 2).active_orders === 1);
+    check('close table with unpaid order -> 409', (await call('PATCH', '/tables/2/status', { status: 'available' }, tok.waiter)).status === 409);
 
     // ---------- role transitions ----------
     check('waiter placed->preparing 403', (await call('PATCH', `/orders/${id1}`, { status: 'preparing' }, tok.waiter)).status === 403);
@@ -71,7 +89,7 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     const [[paidRow]] = await db.query(
       `SELECT s.username FROM orders o JOIN staff s ON s.staff_id = o.paid_by WHERE o.order_id = ?`, [id1]);
     check('paid_by records the cashier (receipt name)', paidRow && paidRow.username === 'cashier', JSON.stringify(paidRow));
-    check('trigger: table 2 available after paid', (await tableStatus(2)) === 'available');
+    check('trigger: table 2 closed (available) after paid', (await tableStatus(2)) === 'available');
     check('completed order cannot change 409', (await call('PATCH', `/orders/${id1}`, { status: 'cancelled' }, tok.admin)).status === 409);
 
     // ---------- cancel -> คืนสต็อก ----------
@@ -81,6 +99,8 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('chef cancel 403', (await call('PATCH', `/orders/${o2.data.order_id}`, { status: 'cancelled' }, tok.chef)).status === 403);
     check('waiter cancel 200', (await call('PATCH', `/orders/${o2.data.order_id}`, { status: 'cancelled' }, tok.waiter)).status === 200);
     check('trigger: prawn restored after cancel', (await stock('กุ้งสด')) === prawn0);
+    check('cancel keeps the table open', (await tableStatus(3)) === 'occupied');
+    check('waiter closes table 3 (nothing unpaid) -> 200', (await call('PATCH', '/tables/3/status', { status: 'available' }, tok.waiter)).status === 200);
 
     // ---------- trigger SIGNAL: ของไม่พอ ----------
     const big = await call('POST', '/orders', { table_id: 4, order_type: 'take_away', payment_method: 'qr', items: [{ menu_item_id: 2, quantity: 99 }] });
@@ -112,63 +132,12 @@ const check = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(
     check('dashboard bad date 400', (await call('GET', '/dashboard?date=2026-13-99', null, tok.admin)).status === 400);
     check('dashboard past date ok', (await call('GET', '/dashboard?date=2020-01-01', null, tok.admin)).data.sales.revenue === 0);
 
-    // ---------- ระบบจองโต๊ะ ----------
-    const shop = (offsetDays) => {
-      const d = new Date(Date.now() + offsetDays * 86400000);
-      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(d);
-    };
-    const tomorrow = shop(1);
-    const booking = (extra) => ({ name: 'ทดสอบ ระบบจอง', phone: '0899999999', date: tomorrow, time: '18:00', party_size: 2, ...extra });
-    const r1 = await call('POST', '/reservations', booking());
-    check('customer reserves (no login) 201', r1.status === 201 && r1.data.status === 'pending', JSON.stringify(r1.data));
-    const r2 = await call('POST', '/reservations', booking({ phone: '0899999998' }));
-    check('same time gets a different table', r2.status === 201 && r2.data.table_number !== r1.data.table_number, `${r1.data.table_number} / ${r2.data.table_number}`);
-    const big1 = await call('POST', '/reservations', booking({ party_size: 6, phone: '0899999997' }));
-    check('party of 6 gets the 6-seat table', big1.status === 201 && big1.data.table_number === 'T5');
-    check('no table left for another 6 -> 409', (await call('POST', '/reservations', booking({ party_size: 6, phone: '0899999996' }))).status === 409);
-    check('2 hours later the 6-seat table is free', (await call('POST', '/reservations', booking({ party_size: 6, time: '20:00', phone: '0899999996' }))).status === 201);
-    const [[saved]] = await db.query('SELECT customer_name, phone FROM reservation WHERE reservation_id = ?', [r1.data.reservation_id]);
-    check('name + phone stored on the reservation', saved && saved.customer_name === 'ทดสอบ ระบบจอง' && saved.phone === '0899999999', JSON.stringify(saved));
-    const listed = (await call('GET', `/reservations?date=${tomorrow}`, null, tok.waiter)).data || [];
-    const row = listed.find((r) => r.reservation_id === r1.data.reservation_id);
-    check('staff list shows customer_name + phone', row && row.customer_name === 'ทดสอบ ระบบจอง' && row.phone === '0899999999', JSON.stringify(row));
-    check('past date -> 400', (await call('POST', '/reservations', booking({ date: shop(-1) }))).status === 400);
-    check('outside hours -> 400', (await call('POST', '/reservations', booking({ time: '08:00' }))).status === 400);
-    check('party 0 -> 400', (await call('POST', '/reservations', booking({ party_size: 0 }))).status === 400);
-    check('bad phone -> 400', (await call('POST', '/reservations', booking({ phone: 'abc' }))).status === 400);
-    check('list without login -> 401', (await call('GET', `/reservations?date=${tomorrow}`)).status === 401);
-    check('chef list reservations -> 403', (await call('GET', `/reservations?date=${tomorrow}`, null, tok.chef)).status === 403);
-    const list = await call('GET', `/reservations?date=${tomorrow}`, null, tok.waiter);
-    check('waiter lists reservations', list.status === 200 && list.data.some((r) => r.reservation_id === r1.data.reservation_id));
-    const rid = r1.data.reservation_id;
-    check('pending -> completed (skip) 409', (await call('PATCH', `/reservations/${rid}/status`, { status: 'completed' }, tok.waiter)).status === 409);
-    check('waiter confirms 200', (await call('PATCH', `/reservations/${rid}/status`, { status: 'confirmed' }, tok.waiter)).status === 200);
-    const occupiedTable = list.data.find((r) => r.reservation_id === r2.data.reservation_id).table_id;
-    check('move onto a booked table -> 409', (await call('PUT', `/reservations/${rid}`, { table_id: occupiedTable, date: tomorrow, time: '18:00', party_size: 2 }, tok.waiter)).status === 409);
-    check('move to free time 200', (await call('PUT', `/reservations/${rid}`, { table_id: occupiedTable, date: tomorrow, time: '13:00', party_size: 2 }, tok.waiter)).status === 200);
-    check('waiter delete -> 403', (await call('DELETE', `/reservations/${rid}`, null, tok.waiter)).status === 403);
-    check('admin delete 200', (await call('DELETE', `/reservations/${rid}`, null, tok.admin)).status === 200);
-
-    // trigger กับการจองของวันนี้ (ต้องมีรอบว่างเหลือในวันนี้)
-    const nowTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
-    if (nowTime < '20:30') {
-      await db.query("UPDATE dining_table SET status = 'available'");
-      const today = await call('POST', '/reservations', booking({ date: shop(0), time: '20:30', phone: '0899999995' }));
-      const tid = (await db.query('SELECT table_id FROM reservation WHERE reservation_id = ?', [today.data.reservation_id]))[0][0].table_id;
-      await call('PATCH', `/reservations/${today.data.reservation_id}/status`, { status: 'confirmed' }, tok.admin);
-      check('trigger: confirmed today -> table reserved', (await tableStatus(tid)) === 'reserved');
-      await call('PATCH', `/reservations/${today.data.reservation_id}/status`, { status: 'cancelled' }, tok.admin);
-      check('trigger: cancelled -> table available', (await tableStatus(tid)) === 'available');
-    } else {
-      console.log('SKIP  today reservation trigger (after 20:30)');
-    }
   } catch (e) {
     fail++; console.log('ERROR', e);
   } finally {
     // คืนข้อมูลเดิม
     await db.query('DELETE FROM orders WHERE order_id > ?', [maxOrder]);
     await db.query('DELETE FROM menu_item WHERE menu_item_id > ?', [maxMenu]);
-    await db.query('DELETE FROM reservation WHERE reservation_id > ?', [maxResv]);
     for (const r of stockBefore) await db.query('UPDATE ingredient SET quantity_in_stock=? WHERE ingredient_id=?', [r.quantity_in_stock, r.ingredient_id]);
     for (const r of tablesBefore) await db.query('UPDATE dining_table SET status=? WHERE table_id=?', [r.status, r.table_id]);
     await db.query('UPDATE menu_item SET is_active = 1 WHERE menu_item_id = 1');

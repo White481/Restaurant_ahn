@@ -39,35 +39,21 @@ export const TIMED_STATUSES = ['placed', 'preparing', 'ready'];
 export const WARN_MINUTES = 10;
 export const LATE_MINUTES = 20;
 
-// ---------- การจองโต๊ะ (สำเนาของ PERMISSIONS / RESERVATION_TRANSITIONS ใน backend) ----------
-export const RESERVATION_ROLES = ['admin', 'waiter'];
-export const RESERVATION_DELETE_ROLES = ['admin'];
-export const RESERVATION_NEXT = { pending: ['confirmed', 'cancelled'], confirmed: ['completed', 'cancelled'] };
-export const RESERVATION_TONE = {
-  pending: 'bg-peach-100 text-peach-700 dark:bg-peach-900 dark:text-peach-300',
-  confirmed: 'bg-sage-100 text-sage-700 dark:bg-sage-900 dark:text-sage-300',
-  completed: 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-200',
-  cancelled: 'bg-chili-100 text-chili-700 dark:bg-chili-900 dark:text-chili-300'
+// ---------- โต๊ะ (สำเนาของ PERMISSIONS.manageTables / TABLE_TRANSITIONS ใน backend) ----------
+export const TABLE_ROLES = ['admin', 'waiter'];
+export const TABLE_TRANSITIONS = {
+  available: { occupied: TABLE_ROLES, inactive: ['admin'] },
+  occupied: { available: TABLE_ROLES },
+  inactive: { available: ['admin'] }
 };
-
-// เวลาที่รับจอง ทุก 30 นาที (ต้องตรงกับ FIRST_SLOT / LAST_SLOT ใน reservationController.js)
-export const RESERVATION_SLOTS = Array.from({ length: 22 }, (_, i) => {
-  const minutes = 10 * 60 + i * 30;
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-});
-
-// วันและเวลาปัจจุบันตามเวลาร้าน (YYYY-MM-DD, HH:MM)
-export function shopNow() {
-  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
-  const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
-  return { date, time };
+export function canTableTransition(role, from, to) {
+  return (TABLE_TRANSITIONS[from]?.[to] || []).includes(role);
 }
-
-export function addDays(isoDate, days) {
-  const d = new Date(`${isoDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+export const TABLE_TONE = {
+  available: 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-200',
+  occupied: 'bg-sage-100 text-sage-700 dark:bg-sage-900 dark:text-sage-300',
+  inactive: 'bg-chili-100 text-chili-700 dark:bg-chili-900 dark:text-chili-300'
+};
 
 // role ที่รับชำระเงินได้ (ต้องตรงกับ requireAuth ของ POST /api/orders/:id/pay ใน backend)
 export const PAYMENT_ROLES = ['admin', 'cashier', 'waiter'];

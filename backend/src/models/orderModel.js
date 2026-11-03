@@ -12,8 +12,13 @@ exports.createOrder = async (orderData, items) => {
         await connection.beginTransaction();
         const { table_id, staff_id, order_type, special_request, payment_method } = orderData;
 
-        const [tables] = await connection.execute('SELECT table_id FROM dining_table WHERE table_id = ?', [table_id]);
+        // ล็อกแถวโต๊ะไว้ระหว่างสั่ง กันพนักงานปิดโต๊ะพร้อมกับที่ลูกค้ากำลังสั่ง
+        const [tables] = await connection.execute('SELECT status FROM dining_table WHERE table_id = ? FOR UPDATE', [table_id]);
         if (tables.length === 0) throw new HttpError(400, `Table ${table_id} not found`);
+        // สั่งได้เฉพาะโต๊ะที่พนักงานเปิดแล้ว (trigger trg_orders_bi_table_open ตรวจซ้ำอีกชั้นใน MySQL)
+        if (tables[0].status !== 'occupied') {
+            throw new HttpError(409, 'This table is not open yet. Please ask staff to open the table.');
+        }
 
         // 1. สร้าง record ในตาราง orders
         const [orderResult] = await connection.execute(
